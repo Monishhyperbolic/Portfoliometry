@@ -1,3 +1,7 @@
+Updated Index with Google Sign-In
+Preview
+Code
+
 <!DOCTYPE html>
 <html lang="en">
 
@@ -5,7 +9,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Portfoliometry</title>
-    <script src="https://apis.google.com/js/platform.js" async defer></script>
+    <!-- Replace old platform.js with new Google Identity Services library -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -79,13 +84,13 @@
             }
 
             .btn-1 {
-                width: 100px; /* Adjust button size for smaller screens */
+                width: 100px;
             }
         }
     </style>
 </head>
 
-<body onload="startApp(); attachSignIn();">
+<body>
     <nav class="topnav">
         <p class="logo">Portfoliometry</p>
         <p>
@@ -109,69 +114,53 @@
     <div class="next">
         <p class="landingline"><b>Unlock the full potential of your investments with AI-driven insights—analyze, optimize, and grow your portfolio effortlessly!</b></p>
         
-        <!-- Custom sign-in buttons -->
-        <button id="sign-up-btn" class="btn-1">Sign Up</button>
-        <button id="log-in-btn" class="btn-1">Log In</button>
+        <!-- Google Sign-In button container -->
+        <div id="g_id_onload"
+             data-client_id="688477909858-kqgsf59np30758lrec80epni3a7ppvd4.apps.googleusercontent.com"
+             data-callback="handleCredentialResponse">
+        </div>
+        <div class="g_id_signin" data-type="standard"></div>
     </div>
 
     <script>
-        function onSignIn(googleUser) {
-            var profile = googleUser.getBasicProfile();
-            var id_token = googleUser.getAuthResponse().id_token;
-
-            console.log('ID Token:', id_token);
-
-            fetch('https://portfoliometry.vercel.app/auth/google', { // Corrected URL
+        function handleCredentialResponse(response) {
+            // This function is called when user successfully signs in
+            const credential = response.credential;
+            
+            // Send the credential to your backend
+            fetch('https://portfoliometry.vercel.app/auth/google', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ idToken: id_token }),
+                body: JSON.stringify({ credential: credential }),
             })
-                .then(response => response.json())
-                .then(data => {
-                    console.log('Backend response:', data);
-                    // Handle user data or session management here
-                })
-                .catch(error => {
-                    console.error('Error sending token to backend:', error);
-                });
-        }
-
-        function signOut() {
-            var auth2 = gapi.auth2.getAuthInstance();
-            auth2.signOut().then(function () {
-                console.log('User signed out.');
-                // Additional sign-out handling can be added here
+            .then(response => response.json())
+            .then(data => {
+                console.log('Success:', data);
+                // Handle successful login here (e.g., redirect to dashboard)
+                // window.location.href = '/dashboard.html';
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+                // Handle errors here (e.g., show error message to user)
             });
         }
 
-        function startApp() {
-            gapi.load('auth2', function () {
-                gapi.auth2.init({
-                    client_id: '688477909858-kqgsf59np30758lrec80epni3a7ppvd4.apps.googleusercontent.com'
-                }).then(function () {
-                    gapi.signin2.render('g-signin2', {
-                        'scope': 'profile email',
-                        'longtitle': true,
-                        'theme': 'dark',
-                        'onsuccess': onSignIn
-                    });
-                });
+        // Initialize Google Identity Services
+        window.onload = function () {
+            google.accounts.id.initialize({
+                client_id: '688477909858-kqgsf59np30758lrec80epni3a7ppvd4.apps.googleusercontent.com',
+                callback: handleCredentialResponse
             });
-        }
-
-        function attachSignIn() {
-            document.getElementById('sign-up-btn').addEventListener('click', function () {
-                gapi.auth2.getAuthInstance().signIn();
-            });
-
-            document.getElementById('log-in-btn').addEventListener('click', function () {
-                gapi.auth2.getAuthInstance().signIn();
-            });
-        }
+            
+            // Render the sign-in button
+            google.accounts.id.renderButton(
+                document.querySelector('.next'),
+                { theme: 'filled_black', size: 'large', shape: 'pill' }
+            );
+        };
     </script>
-
 </body>
 
 </html>
