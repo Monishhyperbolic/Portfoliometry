@@ -9,12 +9,39 @@
     <meta name="author" content="Your Name">
     <title>Portfoliometry</title>
     
-    <!-- Google Identity Script -->
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script src="https://cdn.auth0.com/js/auth0-spa-js/2.0/auth0-spa-js.production.js"></script>
 
-    <!-- External stylesheets (if any) -->
+
 
     <style>
+         .auth-button {
+            height: 55px;
+            width: 170px;
+            border-radius: 20px;
+            background-color: #6d28d9;
+            color: white;
+            font-size: medium;
+            border: none;
+            cursor: pointer;
+            margin: 5px;
+        }
+
+        .auth-button:hover {
+            background-color: orange;
+            color: black;
+        }
+
+        #user-profile {
+            text-align: center;
+            margin-top: 20px;
+            display: none;
+        }
+
+        #user-profile img {
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+        }
         body {
             font-family: Arial, sans-serif;
             margin: 0;
@@ -163,14 +190,6 @@
 </head>
 
 <body>
-
-    <!-- Data Section (for Google Authentication) -->
-    <div class="data">
-        <div id="coin-data"></div>
-        <div id="error-message" class="error" style="color: red; display: none;"></div>
-    </div>
-
-    <!-- Navigation Bar -->
     <nav class="topnav">
         <p class="logo">Portfoliometry</p>
         <p>
@@ -181,100 +200,111 @@
         </p>
     </nav>
 
-    <!-- Lottie Animation Background -->
     <div>
         <script src="https://unpkg.com/@dotlottie/player-component@2.7.12/dist/dotlottie-player.mjs" type="module"></script>
-        <dotlottie-player alt="Portfolio animation" class="backg" src="https://lottie.host/78f1e790-410f-4245-b10b-6f691870f34b/at69G9258x.lottie" background="transparent" speed="1" loop autoplay></dotlottie-player>
+        <dotlottie-player class="backg" src="https://lottie.host/78f1e790-410f-4245-b10b-6f691870f34b/at69G9258x.lottie" background="transparent" speed="1" loop autoplay></dotlottie-player>
     </div>
 
-    <!-- Main Content and Call to Action -->
     <div class="next">
         <p class="landingline"><b>Unlock the full potential of your investments with AI-driven insights—analyze, optimize, and grow your portfolio effortlessly!</b></p>
-
-        <!-- Google Sign-In Button -->
-        <div class="next">
-            <p class="landingline"><b>Unlock the full potential of your investments with AI-driven insights—analyze, optimize, and grow your portfolio effortlessly!</b></p>
-            
-            <div id="g_id_onload"
-                 data-client_id="688477909858-kqgsf59np30758lrec80epni3a7ppvd4.apps.googleusercontent.com"
-                 data-callback="handleCredentialResponse"
-                 data-auto_select="true"
-                 data-auto_prompt="false">
-            </div>
-            <div class="g_id_signin"
-                 data-type="standard"
-                 data-size="large"
-                 data-theme="outline"
-                 data-text="sign_in_with"
-                 data-shape="rectangular"
-                 data-logo_alignment="left">
-            </div>
-    
-            <!-- Add a user info section -->
-            <div id="userInfo" style="display: none; margin-top: 20px;">
-                <img id="userPicture" style="border-radius: 50%; width: 50px; height: 50px;" />
-                <p id="userName"></p>
-                <p id="userEmail"></p>
-                <button onclick="signOut()" class="btn-1">Sign Out</button>
-            </div>
+        
+        <!-- Auth buttons -->
+        <div id="auth-buttons">
+            <button onclick="login()" class="auth-button">Log In</button>
+            <button onclick="signup()" class="auth-button">Sign Up</button>
         </div>
-    
 
-    <!-- Scripts -->
+        <!-- User profile section -->
+        <div id="user-profile">
+            <img id="profile-picture" src="" alt="Profile picture">
+            <p id="profile-name"></p>
+            <p id="profile-email"></p>
+            <button onclick="logout()" class="auth-button">Log Out</button>
+        </div>
+    </div>
+
     <script>
-        function handleCredentialResponse(response) {
-            // Send the credential to your backend
-            fetch('https://portfoliometry.vercel.app/server.js', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ credential: response.credential }),
-            })
-            .then(response => response.json())
-            .then(data => {
-                console.log('Success:', data);
-                // Show user info
-                document.getElementById('userInfo').style.display = 'block';
-                document.getElementById('userPicture').src = data.user.picture;
-                document.getElementById('userName').textContent = data.user.name;
-                document.getElementById('userEmail').textContent = data.user.email;
-                
-                // Hide sign-in button
-                document.querySelector('.g_id_signin').style.display = 'none';
-                
-                // Store user info in localStorage
-                localStorage.setItem('user', JSON.stringify(data.user));
-            })
-            .catch((error) => {
-                console.error('Error:', error);
-                document.getElementById('error-message').textContent = 'Failed to login. Please try again.';
-                document.getElementById('error-message').style.display = 'block';
+        let auth0Client;
+
+        async function initAuth0() {
+            auth0Client = await auth0.createAuth0Client({
+                domain: 'dev-psm735j6kgll3lx4.us.auth0.com',
+                clientId: 'pKDdgqidWoqV8o1eQ7Wbt5inGJwmBEyZ',
+                authorizationParams: {
+                    redirect_uri: window.location.origin
+                }
+            });
+
+            // Check if user is returning from auth0 login
+            if (location.search.includes("code=") && location.search.includes("state=")) {
+                await auth0Client.handleRedirectCallback();
+                window.history.replaceState({}, document.title, "/");
+            }
+
+            // Check if user is authenticated
+            const isAuthenticated = await auth0Client.isAuthenticated();
+            if (isAuthenticated) {
+                updateUI();
+            }
+        }
+
+        async function updateUI() {
+            const isAuthenticated = await auth0Client.isAuthenticated();
+            document.getElementById('auth-buttons').style.display = isAuthenticated ? 'none' : 'block';
+            document.getElementById('user-profile').style.display = isAuthenticated ? 'block' : 'none';
+
+            if (isAuthenticated) {
+                const user = await auth0Client.getUser();
+                document.getElementById('profile-picture').src = user.picture;
+                document.getElementById('profile-name').textContent = user.name;
+                document.getElementById('profile-email').textContent = user.email;
+
+                // Send user data to your backend
+                fetch('http://localhost:3000/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        email: user.email,
+                        name: user.name,
+                        picture: user.picture,
+                        sub: user.sub // Auth0 unique identifier
+                    })
+                })
+                .then(response => response.json())
+                .then(data => console.log('User data saved:', data))
+                .catch(error => console.error('Error saving user data:', error));
+            }
+        }
+
+        async function login() {
+            await auth0Client.loginWithRedirect({
+                authorizationParams: {
+                    redirect_uri: window.location.origin
+                }
             });
         }
 
-        function signOut() {
-            google.accounts.id.disableAutoSelect();
-            localStorage.removeItem('user');
-            document.getElementById('userInfo').style.display = 'none';
-            document.querySelector('.g_id_signin').style.display = 'block';
-            location.reload();
+        async function signup() {
+            await auth0Client.loginWithRedirect({
+                authorizationParams: {
+                    redirect_uri: window.location.origin,
+                    screen_hint: "signup"
+                }
+            });
         }
 
-        // Check if user is already logged in
-        window.onload = function() {
-            const user = localStorage.getItem('user');
-            if (user) {
-                const userData = JSON.parse(user);
-                document.getElementById('userInfo').style.display = 'block';
-                document.getElementById('userPicture').src = userData.picture;
-                document.getElementById('userName').textContent = userData.name;
-                document.getElementById('userEmail').textContent = userData.email;
-                document.querySelector('.g_id_signin').style.display = 'none';
-            }
-        };
+        async function logout() {
+            await auth0Client.logout({
+                logoutParams: {
+                    returnTo: window.location.origin
+                }
+            });
+        }
+
+        // Initialize Auth0 when page loads
+        window.onload = initAuth0;
     </script>
-
 </body>
-
 </html>
