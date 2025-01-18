@@ -5,7 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Portfoliometry</title>
-    <link rel="stylesheet" href="style.css">
+    <script src="https://apis.google.com/js/platform.js" async defer></script>
+
 </head>
 <style>
     body {
@@ -202,8 +203,43 @@ button{
 }
 }
 </style>
+<script>
+    function onSignIn(googleUser) {
+      // Get the Google profile info
+      var profile = googleUser.getBasicProfile();
+      var id_token = googleUser.getAuthResponse().id_token;
+  
+      console.log('ID Token:', id_token);  // You can send this token to your backend server
+  
+      // Optionally, send the token to your backend for verification and session management
+    }
+  
+    function signOut() {
+      var auth2 = gapi.auth2.getAuthInstance();
+      auth2.signOut().then(function() {
+        console.log('User signed out.');
+      });
+    }
+  
+    function startApp() {
+      gapi.load('auth2', function() {
+        gapi.auth2.init({
+          client_id: 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com'
+        }).then(function() {
+          // Render the Google sign-in button
+          gapi.signin2.render('g-signin2', {
+            'scope': 'profile email',
+            'longtitle': true,
+            'theme': 'dark',
+            'onsuccess': onSignIn
+          });
+        });
+      });
+    }
+  </script>
+  
 
-<body>
+<body onload="startApp();">
 
 
     <div class="data">
@@ -225,8 +261,8 @@ button{
 </div>
 <div class="next">
     <p class="landingline" style=""><b>Unlock the full potential of your investments with AI-driven insights—analyze, optimize, and grow your portfolio effortlessly!</b></p>
-    <button onclick="location.href = 'ai.html';" class="btn-1">Sign Up</button>
-    <button onclick="location.href = 'ai.html';" class="btn-1">Log In </button>
+    <button id="g-signin2" class="btn-1">Sign Up</button>
+    <button id="g-signin2"class="btn-1">Log In </button>
 </div>
 
 </body>
