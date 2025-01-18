@@ -6,182 +6,61 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Portfoliometry</title>
     <script src="https://apis.google.com/js/platform.js" async defer></script>
-</head>
-
-<style>
-    body {
-        font-family: Arial, sans-serif;
-        margin: 0;
-        background-color: #27272a;
-        color: #27272a;
-    }
-
-    .card {
-        display: inline-block;
-        align-items: center;
-        height: 5px;
-        width: 150px;
-        font-size: auto;
-        color: white;
-    }
-
-    .data {
-        position: sticky;
-        top: 0;
-        background-color: #27272a;
-        padding: 10px 20px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-    }
-
-    .topnav {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        background-color: #27272a;
-        padding: 10px 20px;
-        box-shadow: 0 1px 1px 0 rgba(196, 194, 194, 0.2);
-    }
-
-    .topnav .logo {
-        color: #f2f2f2;
-        font-size: 24px;
-        font-weight: bold;
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    }
-
-    .topnav a {
-        color: #f2f2f2;
-        text-align: center;
-        padding: 14px 16px;
-        text-decoration: none;
-        font-size: 17px;
-    }
-
-    .topnav a:hover {
-        background-color: #3831a1;
-        color: rgb(249, 249, 249);
-    }
-
-    .backg {
-        display: block;
-        margin-left: auto;
-        margin-right: auto;
-        width: 700px;
-        height: 600px;
-    }
-
-    .landingline {
-        color: white;
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        display: block;
-        margin-left: auto;
-        margin-right: auto;
-    }
-
-    .next {
-        height: 200px;
-        width: 45%;
-        font-size: xx-large;
-        justify-items: center;
-        display: block;
-        margin-left: auto;
-        margin-right: auto;
-        text-align: center;
-    }
-
-    button {
-        display: inline;
-    }
-
-    .btn-1 {
-        height: 55px;
-        width: 170px;
-        border-radius: 20px;
-        background-color: #6d28d9;
-        color: white;
-        font-size: medium;
-    }
-
-    .btn-1:hover {
-        background-color: orange;
-        color: black;
-    }
-
-    .footer {
-        color: white;
-    }
-
-    @media (max-width: 768px) {
-        #coin-data, #error-message {
-            flex-grow: 1;
-            text-align: center;
-        }
-
-        .card {
-            display: inline-block;
-            align-items: center;
-            height: auto;
-            width: auto;
-            font-size: auto;
-            color: white;
-        }
-
-        .data {
-            position: sticky;
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
             background-color: #27272a;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+            color: #f2f2f2;
         }
 
         .topnav {
-            flex-direction: column;
-            align-items: flex-start;
-            padding-top: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #27272a;
+            padding: 10px 20px;
+            box-shadow: 0 1px 1px rgba(196, 194, 194, 0.2);
         }
 
-        .topnav .nav-links {
-            width: 100%;
-            justify-content: flex-start;
-            margin-top: 10px;
+        .topnav .logo {
+            font-size: 24px;
+            font-weight: bold;
         }
 
         .topnav a {
-            padding-left: 10px;
-            padding-right: 10px;
-            font-size: 16px;
+            color: #f2f2f2;
+            padding: 14px 16px;
+            text-decoration: none;
+            font-size: 17px;
+        }
+
+        .topnav a:hover {
+            background-color: #3831a1;
+            color: rgb(249, 249, 249);
         }
 
         .backg {
             display: block;
             margin-left: auto;
             margin-right: auto;
-            width: 400px;
-            height: 400px;
-        }
-
-        .next {
-            top: auto;
-            margin-top: -20%;
-            text-align: center;
+            width: 700px;
+            height: 600px;
         }
 
         .landingline {
-            font-size: large;
+            color: white;
             text-align: center;
-            padding-left: .5rem;
-            padding-right: .5rem;
         }
 
-        .button {
-            display: inline;
+        .next {
+            text-align: center;
+            margin-top: 20px;
         }
 
         .btn-1 {
             height: 55px;
-            width: 100px;
+            width: 170px;
             border-radius: 20px;
             background-color: #6d28d9;
             color: white;
@@ -193,112 +72,105 @@
             color: black;
         }
 
-        .next {
-            padding-top: 70px;
-            height: 200px;
-            width: 70%;
-            font-size: xx-large;
-            justify-items: center;
-            display: block;
-            margin-left: auto;
-            margin-right: auto;
-            text-align: center;
+        @media (max-width: 768px) {
+            .backg {
+                width: 400px;
+                height: 400px;
+            }
+
+            .btn-1 {
+                width: 100px; /* Adjust button size for smaller screens */
+            }
         }
-    }
-</style>
-
-<script>// Called when the user successfully signs in
-    function onSignIn(googleUser) {
-        // Get the Google profile info
-        var profile = googleUser.getBasicProfile();
-        var id_token = googleUser.getAuthResponse().id_token;
-    
-        console.log('ID Token:', id_token); // This will log the token for debugging purposes
-    
-        // Send the token to your backend for further processing
-        fetch('http://https://portfoliometry.vercel.app/server.js/auth/google', {  // Ensure this is your backend URL
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ idToken: id_token }), // Send the token in the body
-        })
-        .then(response => response.json())
-        .then(data => {
-            console.log('Backend response:', data);
-            // Handle the backend response here (e.g., save session, show user data)
-        })
-        .catch(error => {
-            console.error('Error sending token to backend:', error);
-        });
-    }
-    
-    // Sign out function
-    function signOut() {
-        var auth2 = gapi.auth2.getAuthInstance();
-        auth2.signOut().then(function () {
-            console.log('User signed out.');
-        });
-    }
-    
-    // Initialize Google Auth API and render Google Sign-in button
-    function startApp() {
-        gapi.load('auth2', function () {
-            gapi.auth2.init({
-                client_id: '688477909858-kqgsf59np30758lrec80epni3a7ppvd4.apps.googleusercontent.com' // Your actual Google Client ID
-            }).then(function () {
-                // Render the Google sign-in button
-                gapi.signin2.render('g-signin2', {
-                    'scope': 'profile email',
-                    'longtitle': true,
-                    'theme': 'dark',
-                    'onsuccess': onSignIn // Attach the onSignIn function to handle successful sign-ins
-                });
-            });
-        });
-    }
-    
-    // Attach the sign-in event to custom buttons (if you want custom buttons for sign-in/sign-up)
-    function attachSignIn() {
-        document.getElementById('sign-up-btn').addEventListener('click', function () {
-            gapi.auth2.getAuthInstance().signIn();
-        });
-    
-        document.getElementById('log-in-btn').addEventListener('click', function () {
-            gapi.auth2.getAuthInstance().signIn();
-        });
-    }
-    
-                
-</script>
-
+    </style>
+</head>
 
 <body onload="startApp(); attachSignIn();">
-
-    <div class="data">
-        <div id="coin-data"></div>
-        <div id="error-message" class="error"></div>
-        <script src="script.js"></script>
-    </div>
     <nav class="topnav">
         <p class="logo">Portfoliometry</p>
         <p>
             <a href="index.html">Home</a>
             <a href="ai.html">Portfoliometry AI</a>
-            <a href="tracker.html">Portfolio tracker</a>
+            <a href="tracker.html">Portfolio Tracker</a>
             <a href="about.html">About</a>
         </p>
     </nav>
+
+    <div class="data">
+        <div id="coin-data"></div>
+        <div id="error-message" class="error"></div>
+    </div>
+
     <div>
         <script src="https://unpkg.com/@dotlottie/player-component@2.7.12/dist/dotlottie-player.mjs" type="module"></script>
-        <dotlottie-player class="backg" src="https://lottie.host/78f1e790-410f-4245-b10b-6f691870f34b/at69G9258x.lottie" background="transparent" styp speed="1" loop autoplay></dotlottie-player>
+        <dotlottie-player class="backg" src="https://lottie.host/78f1e790-410f-4245-b10b-6f691870f34b/at69G9258x.lottie" background="transparent" speed="1" loop autoplay></dotlottie-player>
     </div>
+
     <div class="next">
         <p class="landingline"><b>Unlock the full potential of your investments with AI-driven insights—analyze, optimize, and grow your portfolio effortlessly!</b></p>
+        
         <!-- Custom sign-in buttons -->
         <button id="sign-up-btn" class="btn-1">Sign Up</button>
         <button id="log-in-btn" class="btn-1">Log In</button>
     </div>
+
+    <script>
+        function onSignIn(googleUser) {
+            var profile = googleUser.getBasicProfile();
+            var id_token = googleUser.getAuthResponse().id_token;
+
+            console.log('ID Token:', id_token);
+
+            fetch('https://portfoliometry.vercel.app/auth/google', { // Corrected URL
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ idToken: id_token }),
+            })
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Backend response:', data);
+                    // Handle user data or session management here
+                })
+                .catch(error => {
+                    console.error('Error sending token to backend:', error);
+                });
+        }
+
+        function signOut() {
+            var auth2 = gapi.auth2.getAuthInstance();
+            auth2.signOut().then(function () {
+                console.log('User signed out.');
+                // Additional sign-out handling can be added here
+            });
+        }
+
+        function startApp() {
+            gapi.load('auth2', function () {
+                gapi.auth2.init({
+                    client_id: '688477909858-kqgsf59np30758lrec80epni3a7ppvd4.apps.googleusercontent.com'
+                }).then(function () {
+                    gapi.signin2.render('g-signin2', {
+                        'scope': 'profile email',
+                        'longtitle': true,
+                        'theme': 'dark',
+                        'onsuccess': onSignIn
+                    });
+                });
+            });
+        }
+
+        function attachSignIn() {
+            document.getElementById('sign-up-btn').addEventListener('click', function () {
+                gapi.auth2.getAuthInstance().signIn();
+            });
+
+            document.getElementById('log-in-btn').addEventListener('click', function () {
+                gapi.auth2.getAuthInstance().signIn();
+            });
+        }
+    </script>
 
 </body>
 
