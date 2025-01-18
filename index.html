@@ -1,22 +1,44 @@
-Updated Index with Google Sign-In
-Preview
-Code
-
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Portfoliometry - AI-driven insights for optimizing and growing your investment portfolio.">
+    <meta name="keywords" content="portfolio, investment, AI, growth, optimization, financial technology">
+    <meta name="author" content="Your Name">
     <title>Portfoliometry</title>
-    <!-- Replace old platform.js with new Google Identity Services library -->
+    
+    <!-- Google Identity Script -->
     <script src="https://accounts.google.com/gsi/client" async defer></script>
+
+    <!-- External stylesheets (if any) -->
+
     <style>
         body {
             font-family: Arial, sans-serif;
             margin: 0;
             background-color: #27272a;
-            color: #f2f2f2;
+            color: white;
+        }
+
+        .card {
+            display: inline-block;
+            align-items: center;
+            height: 5px;
+            width: 150px;
+            font-size: auto;
+            color: white;
+        }
+
+        .data {
+            position: sticky;
+            top: 0;
+            background-color: #27272a;
+            padding: 10px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
 
         .topnav {
@@ -25,16 +47,19 @@ Code
             align-items: center;
             background-color: #27272a;
             padding: 10px 20px;
-            box-shadow: 0 1px 1px rgba(196, 194, 194, 0.2);
+            box-shadow: 0 1px 1px 0 rgba(196, 194, 194, 0.2);
         }
 
         .topnav .logo {
+            color: #f2f2f2;
             font-size: 24px;
             font-weight: bold;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
 
         .topnav a {
             color: #f2f2f2;
+            text-align: center;
             padding: 14px 16px;
             text-decoration: none;
             font-size: 17px;
@@ -55,12 +80,25 @@ Code
 
         .landingline {
             color: white;
-            text-align: center;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
         }
 
         .next {
+            height: 200px;
+            width: 45%;
+            font-size: xx-large;
+            justify-items: center;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
             text-align: center;
-            margin-top: 20px;
+        }
+
+        button {
+            display: inline;
         }
 
         .btn-1 {
@@ -77,20 +115,62 @@ Code
             color: black;
         }
 
+        .footer {
+            color: white;
+        }
+
+        /* Responsive Design */
         @media (max-width: 768px) {
+            .topnav {
+                flex-direction: column;
+                align-items: flex-start;
+                padding-top: 10px;
+            }
+
+            .topnav a {
+                padding-left: 10px;
+                padding-right: 10px;
+                font-size: 16px;
+            }
+
             .backg {
+                display: block;
+                margin-left: auto;
+                margin-right: auto;
                 width: 400px;
                 height: 400px;
             }
 
+            .next {
+                margin-top: -20%;
+                text-align: center;
+            }
+
+            .landingline {
+                font-size: large;
+                text-align: center;
+                padding-left: .5rem;
+                padding-right: .5rem;
+            }
+
             .btn-1 {
-                width: 100px;
+                height: 60px;
+                width: 180px;
+                font-size: larger;
             }
         }
     </style>
 </head>
 
 <body>
+
+    <!-- Data Section (for Google Authentication) -->
+    <div class="data">
+        <div id="coin-data"></div>
+        <div id="error-message" class="error" style="color: red; display: none;"></div>
+    </div>
+
+    <!-- Navigation Bar -->
     <nav class="topnav">
         <p class="logo">Portfoliometry</p>
         <p>
@@ -101,66 +181,84 @@ Code
         </p>
     </nav>
 
-    <div class="data">
-        <div id="coin-data"></div>
-        <div id="error-message" class="error"></div>
-    </div>
-
+    <!-- Lottie Animation Background -->
     <div>
         <script src="https://unpkg.com/@dotlottie/player-component@2.7.12/dist/dotlottie-player.mjs" type="module"></script>
-        <dotlottie-player class="backg" src="https://lottie.host/78f1e790-410f-4245-b10b-6f691870f34b/at69G9258x.lottie" background="transparent" speed="1" loop autoplay></dotlottie-player>
+        <dotlottie-player alt="Portfolio animation" class="backg" src="https://lottie.host/78f1e790-410f-4245-b10b-6f691870f34b/at69G9258x.lottie" background="transparent" speed="1" loop autoplay></dotlottie-player>
     </div>
 
+    <!-- Main Content and Call to Action -->
     <div class="next">
         <p class="landingline"><b>Unlock the full potential of your investments with AI-driven insights—analyze, optimize, and grow your portfolio effortlessly!</b></p>
-        
-        <!-- Google Sign-In button container -->
-        <div id="g_id_onload"
-             data-client_id="688477909858-kqgsf59np30758lrec80epni3a7ppvd4.apps.googleusercontent.com"
-             data-callback="handleCredentialResponse">
+
+        <!-- Google Sign-In Button -->
+        <div id="g_id_onload" 
+            data-client_id="688477909858-kqgsf59np30758lrec80epni3a7ppvd4.apps.googleusercontent.com"
+            data-callback="handleCredentialResponse">
         </div>
-        <div class="g_id_signin" data-type="standard"></div>
+        <div class="g_id_signin" 
+            data-type="standard"></div>
+
+        <!-- Custom Sign Up / Log In Buttons (Optional, for your own authentication flow) -->
+        <button id="sign-up-btn" class="btn-1">Sign Up</button>
+        <button id="log-in-btn" class="btn-1">Log In</button>
     </div>
 
+    <!-- Scripts -->
     <script>
         function handleCredentialResponse(response) {
-            // This function is called when user successfully signs in
-            const credential = response.credential;
-            
             // Send the credential to your backend
-            fetch('https://portfoliometry.vercel.app/auth/google', {
+            fetch('https://portfoliometry.vercel.app/server.js', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ credential: credential }),
+                body: JSON.stringify({ credential: response.credential }),
             })
             .then(response => response.json())
             .then(data => {
                 console.log('Success:', data);
-                // Handle successful login here (e.g., redirect to dashboard)
-                // window.location.href = '/dashboard.html';
+                // Show user info
+                document.getElementById('userInfo').style.display = 'block';
+                document.getElementById('userPicture').src = data.user.picture;
+                document.getElementById('userName').textContent = data.user.name;
+                document.getElementById('userEmail').textContent = data.user.email;
+                
+                // Hide sign-in button
+                document.querySelector('.g_id_signin').style.display = 'none';
+                
+                // Store user info in localStorage
+                localStorage.setItem('user', JSON.stringify(data.user));
             })
             .catch((error) => {
                 console.error('Error:', error);
-                // Handle errors here (e.g., show error message to user)
+                document.getElementById('error-message').textContent = 'Failed to login. Please try again.';
+                document.getElementById('error-message').style.display = 'block';
             });
         }
 
-        // Initialize Google Identity Services
-        window.onload = function () {
-            google.accounts.id.initialize({
-                client_id: '688477909858-kqgsf59np30758lrec80epni3a7ppvd4.apps.googleusercontent.com',
-                callback: handleCredentialResponse
-            });
-            
-            // Render the sign-in button
-            google.accounts.id.renderButton(
-                document.querySelector('.next'),
-                { theme: 'filled_black', size: 'large', shape: 'pill' }
-            );
+        function signOut() {
+            google.accounts.id.disableAutoSelect();
+            localStorage.removeItem('user');
+            document.getElementById('userInfo').style.display = 'none';
+            document.querySelector('.g_id_signin').style.display = 'block';
+            location.reload();
+        }
+
+        // Check if user is already logged in
+        window.onload = function() {
+            const user = localStorage.getItem('user');
+            if (user) {
+                const userData = JSON.parse(user);
+                document.getElementById('userInfo').style.display = 'block';
+                document.getElementById('userPicture').src = userData.picture;
+                document.getElementById('userName').textContent = userData.name;
+                document.getElementById('userEmail').textContent = userData.email;
+                document.querySelector('.g_id_signin').style.display = 'none';
+            }
         };
     </script>
+
 </body>
 
 </html>
