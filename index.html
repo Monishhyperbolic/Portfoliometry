@@ -192,17 +192,33 @@
         <p class="landingline"><b>Unlock the full potential of your investments with AI-driven insights—analyze, optimize, and grow your portfolio effortlessly!</b></p>
 
         <!-- Google Sign-In Button -->
-        <div id="g_id_onload" 
-            data-client_id="688477909858-kqgsf59np30758lrec80epni3a7ppvd4.apps.googleusercontent.com"
-            data-callback="handleCredentialResponse">
+        <div class="next">
+            <p class="landingline"><b>Unlock the full potential of your investments with AI-driven insights—analyze, optimize, and grow your portfolio effortlessly!</b></p>
+            
+            <div id="g_id_onload"
+                 data-client_id="688477909858-kqgsf59np30758lrec80epni3a7ppvd4.apps.googleusercontent.com"
+                 data-callback="handleCredentialResponse"
+                 data-auto_select="true"
+                 data-auto_prompt="false">
+            </div>
+            <div class="g_id_signin"
+                 data-type="standard"
+                 data-size="large"
+                 data-theme="outline"
+                 data-text="sign_in_with"
+                 data-shape="rectangular"
+                 data-logo_alignment="left">
+            </div>
+    
+            <!-- Add a user info section -->
+            <div id="userInfo" style="display: none; margin-top: 20px;">
+                <img id="userPicture" style="border-radius: 50%; width: 50px; height: 50px;" />
+                <p id="userName"></p>
+                <p id="userEmail"></p>
+                <button onclick="signOut()" class="btn-1">Sign Out</button>
+            </div>
         </div>
-        <div class="g_id_signin" 
-            data-type="standard"></div>
-
-        <!-- Custom Sign Up / Log In Buttons (Optional, for your own authentication flow) -->
-        <button id="sign-up-btn" class="btn-1">Sign Up</button>
-        <button id="log-in-btn" class="btn-1">Log In</button>
-    </div>
+    
 
     <!-- Scripts -->
     <script>
