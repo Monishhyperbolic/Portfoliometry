@@ -207,16 +207,32 @@
     }
 </style>
 
-<script>
-    // Called when user successfully signs in
+<script>// Called when the user successfully signs in
     function onSignIn(googleUser) {
         // Get the Google profile info
         var profile = googleUser.getBasicProfile();
         var id_token = googleUser.getAuthResponse().id_token;
-
-        console.log('ID Token:', id_token); // Send this token to your backend for further processing
+    
+        console.log('ID Token:', id_token); // This will log the token for debugging purposes
+    
+        // Send the token to your backend for further processing
+        fetch('http://https://portfoliometry.vercel.app/server.js/auth/google', {  // Ensure this is your backend URL
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ idToken: id_token }), // Send the token in the body
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log('Backend response:', data);
+            // Handle the backend response here (e.g., save session, show user data)
+        })
+        .catch(error => {
+            console.error('Error sending token to backend:', error);
+        });
     }
-
+    
     // Sign out function
     function signOut() {
         var auth2 = gapi.auth2.getAuthInstance();
@@ -224,34 +240,36 @@
             console.log('User signed out.');
         });
     }
-
+    
     // Initialize Google Auth API and render Google Sign-in button
     function startApp() {
         gapi.load('auth2', function () {
             gapi.auth2.init({
-                client_id: '688477909858-kqgsf59np30758lrec80epni3a7ppvd4.apps.googleusercontent.com'
+                client_id: '688477909858-kqgsf59np30758lrec80epni3a7ppvd4.apps.googleusercontent.com' // Your actual Google Client ID
             }).then(function () {
                 // Render the Google sign-in button
                 gapi.signin2.render('g-signin2', {
                     'scope': 'profile email',
                     'longtitle': true,
                     'theme': 'dark',
-                    'onsuccess': onSignIn
+                    'onsuccess': onSignIn // Attach the onSignIn function to handle successful sign-ins
                 });
             });
         });
     }
-
+    
     // Attach the sign-in event to custom buttons (if you want custom buttons for sign-in/sign-up)
     function attachSignIn() {
         document.getElementById('sign-up-btn').addEventListener('click', function () {
             gapi.auth2.getAuthInstance().signIn();
         });
-
+    
         document.getElementById('log-in-btn').addEventListener('click', function () {
             gapi.auth2.getAuthInstance().signIn();
         });
     }
+    
+                
 </script>
 
 
