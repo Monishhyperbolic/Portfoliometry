@@ -208,13 +208,11 @@
     <div class="next">
         <p class="landingline"><b>Unlock the full potential of your investments with AI-driven insights—analyze, optimize, and grow your portfolio effortlessly!</b></p>
         
-        <!-- Auth buttons -->
         <div id="auth-buttons">
             <button onclick="login()" class="auth-button">Log In</button>
             <button onclick="signup()" class="auth-button">Sign Up</button>
         </div>
 
-        <!-- User profile section -->
         <div id="user-profile">
             <img id="profile-picture" src="" alt="Profile picture">
             <p id="profile-name"></p>
@@ -235,13 +233,11 @@
                 }
             });
 
-            // Check if user is returning from auth0 login
             if (location.search.includes("code=") && location.search.includes("state=")) {
                 await auth0Client.handleRedirectCallback();
                 window.history.replaceState({}, document.title, "/");
             }
 
-            // Check if user is authenticated
             const isAuthenticated = await auth0Client.isAuthenticated();
             if (isAuthenticated) {
                 updateUI();
@@ -260,7 +256,7 @@
                 document.getElementById('profile-email').textContent = user.email;
 
                 // Send user data to your backend
-                fetch('http://localhost:3000/auth/login', {
+                fetch('https://portfoliometry.vercel.app/server.js', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -269,7 +265,7 @@
                         email: user.email,
                         name: user.name,
                         picture: user.picture,
-                        sub: user.sub // Auth0 unique identifier
+                        sub: user.sub 
                     })
                 })
                 .then(response => response.json())
@@ -303,7 +299,6 @@
             });
         }
 
-        // Initialize Auth0 when page loads
         window.onload = initAuth0;
     </script>
 </body>
