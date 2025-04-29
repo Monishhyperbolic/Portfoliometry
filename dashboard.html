@@ -11,64 +11,60 @@
             box-sizing: border-box;
             font-family: 'Inter', sans-serif;
         }
-
         body {
             background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
             min-height: 100vh;
             color: #fff;
         }
-
         .container {
             max-width: 1200px;
-            margin: 0 auto;
-            padding: 2rem;
+            margin: 2rem auto;
+            padding: 0 1rem;
         }
-
-        .section {
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        .header h1 {
+            font-size: 2.5rem;
+            color: #fff;
+            margin-bottom: 0.5rem;
+        }
+        .header span {
+            color: #00ff88;
+            font-size: 1.2rem;
+        }
+        .card {
             background: rgba(255, 255, 255, 0.05);
             backdrop-filter: blur(10px);
             border-radius: 16px;
             padding: 1.5rem;
-            margin-bottom: 2rem;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            margin-bottom: 1.5rem;
             border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
         }
-
-        .section h2 {
+        .card h2 {
             font-size: 1.5rem;
-            font-weight: 700;
-            margin-bottom: 1rem;
             color: #00ff88;
+            margin-bottom: 1rem;
         }
-
-        .section p {
+        .card p {
             color: #ccc;
             font-size: 1rem;
         }
-
         .grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
             gap: 1.5rem;
         }
-
-        .card {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 8px;
-            padding: 1rem;
+        .balance {
+            font-size: 1.8rem;
+            color: #00ff88;
             text-align: center;
+            margin-bottom: 1rem;
         }
-
-        .card h3 {
-            font-size: 1.2rem;
-            margin-bottom: 0.5rem;
-        }
-
-        .card p {
-            color: #ccc;
-        }
-
         .btn {
+            display: inline-block;
             padding: 0.75rem 1.5rem;
             border: none;
             border-radius: 8px;
@@ -77,84 +73,63 @@
             font-size: 1rem;
             font-weight: 600;
             cursor: pointer;
-            transition: background 0.3s, transform 0.2s;
-            display: inline-block;
             text-decoration: none;
+            transition: background 0.3s, transform 0.2s;
         }
-
         .btn:hover {
             background: #00cc6f;
             transform: translateY(-2px);
         }
-
         .error {
             color: #ff5555;
             font-size: 0.85rem;
-            margin-top: 1rem;
             text-align: center;
             display: none;
         }
-
-        iframe {
-            border: none;
-            width: 100%;
-        }
-
         @media (max-width: 768px) {
             .container {
-                padding: 1rem;
+                margin: 1rem;
             }
-
-            .section h2 {
-                font-size: 1.25rem;
+            .header h1 {
+                font-size: 2rem;
             }
         }
     </style>
 </head>
 <body>
-    <!-- Navbar -->
-    <iframe src="navbar.html" height="80px"></iframe>
+    <!-- Include Navbar -->
+    <div id="navbar"></div>
 
     <div class="container">
-        <div class="section">
-            <h2>Welcome, <span id="userEmail">User</span>!</h2>
-            <p>Your virtual balance: $<span id="virtualBalance">0.00</span></p>
-            <p class="error" id="error">Error loading user data</p>
+        <div class="header">
+            <h1>Welcome to Trade Daddy</h1>
+            <span id="userEmail">Loading...</span>
         </div>
-
-        <div class="section">
-            <h2>Your Portfolio</h2>
-            <div class="grid" id="portfolio">
-                <!-- Populated dynamically or placeholder -->
-                <p>No portfolio entries yet. Start trading!</p>
+        <div class="balance" id="virtualBalance">Virtual Balance: $0.00</div>
+        <p class="error" id="error">An error occurred</p>
+        <div class="grid">
+            <div class="card">
+                <h2>Portfolio</h2>
+                <p id="portfolio">Loading portfolio...</p>
+                <a href="ai-portfolio.html" class="btn">View AI Analysis</a>
             </div>
-            <a href="#trade" class="btn">Trade Now</a>
-        </div>
-
-        <div class="section">
-            <h2>Recent Transactions</h2>
-            <div class="grid" id="transactions">
-                <!-- Populated dynamically or placeholder -->
-                <p>No transactions yet.</p>
+            <div class="card">
+                <h2>Transactions</h2>
+                <p id="transactions">Loading transactions...</p>
             </div>
-        </div>
-
-        <div class="section">
-            <h2>Leaderboard</h2>
-            <div class="grid" id="leaderboard">
-                <!-- Populated dynamically or placeholder -->
-                <p>Leaderboard data coming soon!</p>
+            <div class="card">
+                <h2>Leaderboard</h2>
+                <p id="leaderboard">Loading leaderboard...</p>
             </div>
         </div>
     </div>
 
-    <!-- Footer -->
-    <iframe src="footer.html" height="200px"></iframe>
+    <!-- Include Footer -->
+    <div id="footer"></div>
 
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-analytics.js"></script>
     <script>
         // Firebase Configuration
         const firebaseConfig = {
@@ -170,56 +145,85 @@
         // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
-        const analytics = firebase.analytics();
 
-        // MongoDB Backend API Endpoint (Replace with your actual API)
-        const API_URL = ''; // Placeholder
+        // Backend API URL
+        const API_URL = 'https://tradedaddy.onrender.com';
 
-        // Generate a random unique userId
-        function generateUserId() {
-            return 'user_' + Math.random().toString(36).substr(2, 9) + Date.now();
-        }
+        // Load Navbar and Footer
+        fetch('navbar.html')
+            .then(response => response.text())
+            .then(data => document.getElementById('navbar').innerHTML = data);
+        fetch('footer.html')
+            .then(response => response.text())
+            .then(data => document.getElementById('footer').innerHTML = data);
 
-        // Check or create user in MongoDB
+        // Handle Authentication State
         auth.onAuthStateChanged(async (user) => {
-            if (user) {
-                const email = user.email;
-                document.getElementById('userEmail').textContent = email;
-
-                try {
-                    // Check if user exists in MongoDB
-                    const response = await fetch(`${API_URL}/users?email=${email}`);
-                    const data = await response.json();
-
-                    if (data.user) {
-                        // User exists, display balance
-                        document.getElementById('virtualBalance').textContent = data.user.virtualBalance.toFixed(2);
-                    } else {
-                        // Create new user
-                        const userId = generateUserId();
-                        const newUser = {
-                            userId,
-                            email,
-                            virtualBalance: 100000.00, // Starting balance
-                            createdAt: new Date().toISOString()
-                        };
-
-                        await fetch(`${API_URL}/users`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(newUser)
-                        });
-
-                        document.getElementById('virtualBalance').textContent = newUser.virtualBalance.toFixed(2);
-                    }
-                } catch (error) {
-                    document.getElementById('error').style.display = 'block';
-                    document.getElementById('error').textContent = 'Error connecting to database';
-                    console.error('Database error:', error);
-                }
-            } else {
-                // Redirect to login if not authenticated
+            const errorMsg = document.getElementById('error');
+            if (!user) {
                 window.location.href = 'index.html';
+                return;
+            }
+
+            const email = user.email;
+            const userId = user.uid;
+            document.getElementById('userEmail').textContent = email;
+
+            try {
+                // Check if user exists in MongoDB
+                const response = await fetch(`${API_URL}/users?email=${encodeURIComponent(email)}`);
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Failed to fetch user');
+                }
+
+                let userData = data.user;
+                if (!userData) {
+                    // Create new user
+                    userData = {
+                        userId,
+                        email,
+                        virtualBalance: 100000.00,
+                        createdAt: new Date().toISOString()
+                    };
+                    const createResponse = await fetch(`${API_URL}/users`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(userData)
+                    });
+                    if (!createResponse.ok) {
+                        throw new Error('Failed to create user');
+                    }
+                }
+
+                // Update virtual balance
+                document.getElementById('virtualBalance').textContent = `Virtual Balance: $${userData.virtualBalance.toFixed(2)}`;
+
+                // Fetch portfolio
+                const portfolioResponse = await fetch(`${API_URL}/portfolio/${userId}`);
+                const portfolioData = await portfolioResponse.json();
+                document.getElementById('portfolio').textContent = portfolioData.length
+                    ? portfolioData.map(p => `${p.stockSymbol}: ${p.quantity} shares @ $${p.avgBuyPrice.toFixed(2)}`).join('\n')
+                    : 'No portfolio items yet.';
+
+                // Fetch transactions
+                const transactionsResponse = await fetch(`${API_URL}/transactions/${userId}`);
+                const transactionsData = await transactionsResponse.json();
+                document.getElementById('transactions').textContent = transactionsData.length
+                    ? transactionsData.map(t => `${t.type} ${t.stockSymbol}: ${t.quantity} shares @ $${t.price.toFixed(2)} on ${new Date(t.timestamp).toLocaleString()}`).join('\n')
+                    : 'No transactions yet.';
+
+                // Fetch leaderboard
+                const leaderboardResponse = await fetch(`${API_URL}/leaderboard`);
+                const leaderboardData = await leaderboardResponse.json();
+                document.getElementById('leaderboard').textContent = leaderboardData.length
+                    ? leaderboardData.map((l, i) => `${i + 1}. ${l.userId}: $${l.portfolioValue.toFixed(2)}`).join('\n')
+                    : 'Leaderboard empty.';
+            } catch (error) {
+                errorMsg.style.display = 'block';
+                errorMsg.textContent = error.message || 'Error loading dashboard';
+                console.error('Dashboard error:', error);
             }
         });
     </script>
