@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trade Daddy - AI News Analysis</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            color: #fff;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .section {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .section h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: #00ff88;
+        }
+
+        .section p {
+            color: #ccc;
+            font-size: 1rem;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 1rem;
+            text-align: center;
+        }
+
+        .card h3 {
+            font-size: 1.2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .card p {
+            color: #ccc;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            background: #00ff88;
+            color: #1a1a2e;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s, transform 0.2s;
+            display: inline-block;
+            text-decoration: none;
+        }
+
+        .btn:hover {
+            background: #00cc6f;
+            transform: translateY(-2px);
+        }
+
+        iframe {
+            border: none;
+            width: 100%;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+
+            .section h2 {
+                font-size: 1.25rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <iframe src="navbar.html" height="80px"></iframe>
+
+    <div class="container">
+        <div class="section">
+            <h2>AI News Analysis</h2>
+            <p>Stay ahead with AI-powered insights from market news. Our advanced algorithms analyze financial news to provide real-time sentiment analysis and stock alerts.</p>
+        </div>
+
+        <div class="section">
+            <h2>Market Sentiment</h2>
+            <div class="grid">
+                <div class="card">
+                    <h3>Bullish Trends</h3>
+                    <p>AI-detected positive sentiment for tech stocks.</p>
+                </div>
+                <div class="card">
+                    <h3>Bearish Alerts</h3>
+                    <p>Negative sentiment detected for energy sector.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Stock Alerts</h2>
+            <div class="grid">
+                <div class="card">
+                    <h3>AAPL Watchlist</h3>
+                    <p>AI recommends monitoring Apple due to recent news.</p>
+                </div>
+                <div class="card">
+                    <h3>TSLA Volatility</h3>
+                    <p>High volatility detected in Tesla stock.</p>
+                </div>
+            </div>
+            <a href="#subscribe" class="btn">Subscribe for Real-Time Alerts</a>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <iframe src="footer.html" height="200px"></iframe>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth.js"></script>
+    <script>
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCobm0izsCAXX_vrNOW2drnRstjqbrs6aU",
+            authDomain: "tradedaddy-45936.firebaseapp.com",
+            projectId: "tradedaddy-45936",
+            storageBucket: "tradedaddy-45936.firebasestorage.app",
+            messagingSenderId: "506023691851",
+            appId: "1:506023691851:web:0f550e65baccbbeabb2fce",
+            measurementId: "G-F0LPJQHZPW"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+
+        // Redirect to login if not authenticated
+        auth.onAuthStateChanged((user) => {
+            if (!user) {
+                window.location.href = 'index.html';
+            }
+        });
+    </script>
+</body>
+</html>
