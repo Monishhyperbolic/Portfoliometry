@@ -215,97 +215,12 @@
         <p class="landingline"><b>Unlock the full potential of your investments with AI-driven insights—analyze, optimize, and grow your portfolio effortlessly!</b></p>
         
         <div id="auth-buttons">
-            <button onclick="login()" class="auth-button">Log In</button>
-            <button onclick="signup()" class="auth-button">Sign Up</button>
+            <button onclick="window.location.href='login.html'" class="auth-button">Log In</button>
+            <button onclick="window.location.href='signup.html'" class="auth-button">Sign Up</button>
         </div>
 
-        <div id="user-profile">
-            <img id="profile-picture" src="" alt="Profile picture">
-            <p id="profile-name"></p>
-            <p id="profile-email"></p>
-            <button onclick="logout()" class="auth-button">Log Out</button>
-        </div>
+
     </div>
 
-    <script>
-        let auth0Client;
-
-        async function initAuth0() {
-            auth0Client = await auth0.createAuth0Client({
-                domain: 'dev-psm735j6kgll3lx4.us.auth0.com',
-                clientId: 'pKDdgqidWoqV8o1eQ7Wbt5inGJwmBEyZ',
-                authorizationParams: {
-                    redirect_uri: window.location.origin
-                }
-            });
-
-            if (location.search.includes("code=") && location.search.includes("state=")) {
-                await auth0Client.handleRedirectCallback();
-                window.history.replaceState({}, document.title, "/");
-            }
-
-            const isAuthenticated = await auth0Client.isAuthenticated();
-            if (isAuthenticated) {
-                updateUI();
-            }
-        }
-
-        async function updateUI() {
-            const isAuthenticated = await auth0Client.isAuthenticated();
-            document.getElementById('auth-buttons').style.display = isAuthenticated ? 'none' : 'block';
-            document.getElementById('user-profile').style.display = isAuthenticated ? 'block' : 'none';
-
-            if (isAuthenticated) {
-                const user = await auth0Client.getUser();
-                document.getElementById('profile-picture').src = user.picture;
-                document.getElementById('profile-name').textContent = user.name;
-                document.getElementById('profile-email').textContent = user.email;
-
-                // Send user data to your backend
-                fetch('https://portfoliometry.vercel.app/server.js', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        email: user.email,
-                        name: user.name,
-                        picture: user.picture,
-                        sub: user.sub 
-                    })
-                })
-                .then(response => response.json())
-                .then(data => console.log('User data saved:', data))
-                .catch(error => console.error('Error saving user data:', error));
-            }
-        }
-
-        async function login() {
-            await auth0Client.loginWithRedirect({
-                authorizationParams: {
-                    redirect_uri: window.location.origin
-                }
-            });
-        }
-
-        async function signup() {
-            await auth0Client.loginWithRedirect({
-                authorizationParams: {
-                    redirect_uri: window.location.origin,
-                    screen_hint: "signup"
-                }
-            });
-        }
-
-        async function logout() {
-            await auth0Client.logout({
-                logoutParams: {
-                    returnTo: window.location.origin
-                }
-            });
-        }
-
-        window.onload = initAuth0;
-    </script>
 </body>
 </html>
