@@ -100,6 +100,33 @@
             transform: translateY(-2px);
         }
 
+        .google-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            background: #ffffff;
+            color: #333;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s, transform 0.2s;
+            margin-top: 1rem;
+        }
+
+        .google-btn img {
+            width: 20px;
+            margin-right: 0.5rem;
+        }
+
+        .google-btn:hover {
+            background: #f1f1f1;
+            transform: translateY(-2px);
+        }
+
         .error {
             color: #ff5555;
             font-size: 0.85rem;
@@ -121,6 +148,32 @@
 
         .links a:hover {
             text-decoration: underline;
+        }
+
+        .divider {
+            text-align: center;
+            margin: 1.5rem 0;
+            color: #ccc;
+            font-size: 0.9rem;
+            position: relative;
+        }
+
+        .divider::before,
+        .divider::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            width: 45%;
+            height: 1px;
+            background: #ccc;
+        }
+
+        .divider::before {
+            left: 0;
+        }
+
+        .divider::after {
+            right: 0;
         }
 
         @media (max-width: 480px) {
@@ -157,8 +210,13 @@
             <button type="submit" class="btn">Sign Up</button>
             <p class="error" id="error">Error creating account</p>
         </form>
+        <div class="divider">OR</div>
+        <button class="google-btn" id="googleSignIn">
+            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google Logo" />
+            Sign up with Google
+        </button>
         <div class="links">
-            <p>Already have an account? <a href="login.html">Login</a></p>
+            <p>Already have an account? <a href="index.html">Login</a></p>
         </div>
     </div>
 
@@ -183,7 +241,7 @@
         const auth = firebase.auth();
         const analytics = firebase.analytics();
 
-        // Sign-Up Form Handling
+        // Email/Password Sign-Up Handling
         const signupForm = document.getElementById('signupForm');
         const errorMsg = document.getElementById('error');
 
@@ -204,16 +262,32 @@
 
             auth.createUserWithEmailAndPassword(email, password)
                 .then((userCredential) => {
-                    // Signed up
                     const user = userCredential.user;
                     console.log('Signed up:', user.email);
-                    // Redirect to dashboard or login page
                     window.location.href = '/dashboard.html';
                 })
                 .catch((error) => {
                     errorMsg.style.display = 'block';
                     errorMsg.textContent = error.message || 'Error creating account';
                     console.error('Sign-up error:', error);
+                });
+        });
+
+        // Google Sign-In Handling
+        const googleSignInBtn = document.getElementById('googleSignIn');
+
+        googleSignInBtn.addEventListener('click', () => {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            auth.signInWithPopup(provider)
+                .then((result) => {
+                    const user = result.user;
+                    console.log('Google Sign-Up:', user.displayName);
+                    window.location.href = '/dashboard.html';
+                })
+                .catch((error) => {
+                    errorMsg.style.display = 'block';
+                    errorMsg.textContent = error.message || 'Error with Google Sign-In';
+                    console.error('Google Sign-In error:', error);
                 });
         });
     </script>
