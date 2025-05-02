@@ -183,7 +183,7 @@
         // Helper functions
         function showStatus(message) {
             document.getElementById('status').textContent = message;
-            console.log(message);
+            console.log(`[Status] ${message}`);
         }
 
         function showError(message) {
@@ -191,14 +191,19 @@
             errorElement.textContent = message;
             errorElement.style.display = 'block';
             document.getElementById('loading').style.display = 'none';
-            console.error(message);
+            document.getElementById('dashboardGrid').style.display = 'grid';
+            console.error(`[Error] ${message}`);
         }
 
-        // Fetch with retry for rate limits
-        async function fetchWithRetry(url, options, retries = 5, delay = 1000) {
+        // Fetch with timeout and retry
+        async function fetchWithRetry(url, options, retries = 5, delay = 1000, timeout = 5000) {
             for (let i = 0; i < retries; i++) {
                 try {
-                    const response = await fetch(url, options);
+                    showStatus(`Attempt ${i + 1} for ${url}`);
+                    const controller = new AbortController();
+                    const id = setTimeout(() => controller.abort(), timeout);
+                    const response = await fetch(url, { ...options, signal: controller.signal });
+                    clearTimeout(id);
                     if (response.status === 429 && i < retries - 1) {
                         const wait = delay * Math.pow(2, i);
                         showStatus(`Rate limit hit, retrying in ${wait}ms...`);
@@ -207,13 +212,18 @@
                     }
                     if (!response.ok) {
                         let errorMessage = `HTTP ${response.status}`;
-                        if (response.status === 403) errorMessage = `Unauthorized access to bin. Check X-Master-Key permissions.`;
+                        if (response.status === 403) errorMessage = `Unauthorized access to bin. Check X-Master-Key permissions at jsonbin.io.`;
                         if (response.status === 404) errorMessage = `Bin not found. Verify bin ID at jsonbin.io.`;
                         if (response.status === 429) errorMessage = `Rate limit exceeded after retries.`;
                         throw new Error(errorMessage);
                     }
+                    showStatus(`Fetch successful for ${url}`);
                     return response;
                 } catch (error) {
+                    if (error.name === 'AbortError') {
+                        showStatus(`Fetch timed out for ${url}`);
+                        throw new Error(`Request timed out after ${timeout}ms`);
+                    }
                     if (i === retries - 1) throw error;
                 }
             }
@@ -223,6 +233,7 @@
         let app;
         let auth;
         try {
+            showStatus('Initializing Firebase');
             app = initializeApp(firebaseConfig);
             auth = getAuth(app);
             showStatus('Firebase initialized successfully');
@@ -237,7 +248,9 @@
         }
 
         // Handle Authentication State
+        showStatus('Waiting for auth state');
         onAuthStateChanged(auth, async (user) => {
+            showStatus('Auth state received');
             if (!user) {
                 showStatus('No user authenticated, redirecting to login');
                 window.location.href = 'index.html';
@@ -251,10 +264,11 @@
 
             try {
                 // Fetch users data
-                showStatus('Fetching users data');
+                showStatus('Starting users fetch');
                 let usersResponse = await fetchWithRetry(`${JSONBIN_API_URL}/${USERS_BIN_ID}`, {
                     headers: { 'X-Master-Key': JSONBIN_MASTER_KEY }
                 });
+                showStatus('Parsing users data');
                 let usersData = await usersResponse.json();
                 let users = Array.isArray(usersData.record) ? usersData.record : [];
                 if (!Array.isArray(usersData.record)) {
@@ -268,6 +282,7 @@
                         },
                         body: JSON.stringify(users)
                     });
+                    showStatus('Users bin initialized');
                 }
                 
                 // Find or create user
@@ -281,7 +296,8 @@
                         created_at: new Date().toISOString()
                     };
                     users.push(userData);
-                    const updateResponse = await fetchWithRetry(`${JSONBIN_API_URL}/${USERS_BIN_ID}`, {
+                    showStatus('Updating users bin');
+                    await fetchWithRetry(`${JSONBIN_API_URL}/${USERS_BIN_ID}`, {
                         method: 'PUT',
                         headers: {
                             'Content-Type': 'application/json',
@@ -289,7 +305,7 @@
                         },
                         body: JSON.stringify(users)
                     });
-                    showStatus('New user created successfully');
+                    showStatus('New user created');
                 } else {
                     showStatus('Existing user found');
                 }
@@ -297,10 +313,11 @@
                 document.getElementById('virtualBalance').textContent = `Virtual Balance: $${userData.virtual_balance.toFixed(2)}`;
 
                 // Fetch portfolio data
-                showStatus('Fetching portfolio data');
+                showStatus('Starting portfolio fetch');
                 const portfolioResponse = await fetchWithRetry(`${JSONBIN_API_URL}/${PORTFOLIO_BIN_ID}`, {
                     headers: { 'X-Master-Key': JSONBIN_MASTER_KEY }
                 });
+                showStatus('Parsing portfolio data');
                 const portfolioData = await portfolioResponse.json();
                 let portfolios = Array.isArray(portfolioData.record) ? portfolioData.record : [];
                 if (!Array.isArray(portfolioData.record)) {
@@ -314,6 +331,7 @@
                         },
                         body: JSON.stringify(portfolios)
                     });
+                    showStatus('Portfolio bin initialized');
                 }
                 const userPortfolio = portfolios.filter(p => p.user_id === userId);
                 if (userPortfolio.length > 0) {
@@ -323,10 +341,11 @@
                 }
 
                 // Fetch transactions data
-                showStatus('Fetching transactions data');
+                showStatus('Starting transactions fetch');
                 const transactionsResponse = await fetchWithRetry(`${JSONBIN_API_URL}/${TRANSACTIONS_BIN_ID}`, {
                     headers: { 'X-Master-Key': JSONBIN_MASTER_KEY }
                 });
+                showStatus('Parsing transactions data');
                 const transactionsData = await transactionsResponse.json();
                 let transactions = Array.isArray(transactionsData.record) ? transactionsData.record : [];
                 if (!Array.isArray(transactionsData.record)) {
@@ -340,6 +359,7 @@
                         },
                         body: JSON.stringify(transactions)
                     });
+                    showStatus('Transactions bin initialized');
                 }
                 const userTransactions = transactions.filter(t => t.user_id === userId);
                 if (userTransactions.length > 0) {
@@ -348,15 +368,15 @@
                         .join('\n');
                 }
 
-                // Fetch or generate leaderboard
-                showStatus('Fetching leaderboard data');
-                let leaderboardItems = [];
+                // Fetch leaderboard
+                showStatus('Starting leaderboard fetch');
                 try {
                     const leaderboardResponse = await fetchWithRetry(`${JSONBIN_API_URL}/${LEADERBOARD_BIN_ID}`, {
                         headers: { 'X-Master-Key': JSONBIN_MASTER_KEY }
                     });
+                    showStatus('Parsing leaderboard data');
                     const leaderboardData = await leaderboardResponse.json();
-                    leaderboardItems = Array.isArray(leaderboardData.record) ? leaderboardData.record : [];
+                    let leaderboardItems = Array.isArray(leaderboardData.record) ? leaderboardData.record : [];
                     if (!Array.isArray(leaderboardData.record)) {
                         showStatus('Leaderboard bin is not an array, initializing...');
                         leaderboardItems = [];
@@ -368,19 +388,16 @@
                             },
                             body: JSON.stringify(leaderboardItems)
                         });
+                        showStatus('Leaderboard bin initialized');
                     }
                     
                     if (leaderboardItems.length === 0) {
-                        const leaderboard = users.map(u => {
-                            const userStocks = portfolios.filter(p => p.user_id === u.id);
-                            const stocksValue = userStocks.reduce((sum, stock) => sum + (stock.quantity * stock.avg_buy_price), 0);
-                            return {
-                                user_id: u.id,
-                                email: u.email,
-                                portfolio_value: u.virtual_balance + stocksValue
-                            };
-                        });
-                        leaderboard.sort((a, b) => b.portfolio_value - a.portfolio_value);
+                        showStatus('Generating leaderboard');
+                        const leaderboard = [{
+                            user_id: userId,
+                            email: email,
+                            portfolio_value: userData.virtual_balance
+                        }];
                         await fetchWithRetry(`${JSONBIN_API_URL}/${LEADERBOARD_BIN_ID}`, {
                             method: 'PUT',
                             headers: {
@@ -390,6 +407,7 @@
                             body: JSON.stringify(leaderboard)
                         });
                         leaderboardItems = leaderboard;
+                        showStatus('Leaderboard generated');
                     }
                     
                     document.getElementById('leaderboard').textContent = leaderboardItems
@@ -400,13 +418,13 @@
                     showStatus(`Leaderboard error: ${error.message}, showing basic data`);
                 }
 
-                document.getElementById('loading').style.display = 'none';
-                document.getElementById('dashboardGrid').style.display = 'grid';
                 showStatus('Dashboard loaded successfully');
             } catch (error) {
-                showError(`Error loading dashboard: ${error.message}. Check console for details.`);
+                showError(`Error loading dashboard: ${error.message}. Check console and network for details.`);
+            } finally {
                 document.getElementById('loading').style.display = 'none';
                 document.getElementById('dashboardGrid').style.display = 'grid';
+                showStatus('UI updated');
             }
         });
 
