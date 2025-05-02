@@ -133,18 +133,12 @@
         <p>© 2025 Trade Daddy. All rights reserved.</p>
     </footer>
 
-<script type="module">
-    (async () => {
+    <!-- Firebase SDK and JSONBin.io Logic -->
+    <script type="module">
         // Import Firebase modular SDK
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js';
         import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
-    
-        const showError = (msg) => {
-            const errorEl = document.getElementById('error');
-            errorEl.style.display = 'block';
-            errorEl.textContent = msg;
-        };
-    
+
         // Firebase Configuration
         const firebaseConfig = {
             apiKey: "AIzaSyCobm0izsCAXX_vrNOW2drnRstjqbrs6aU",
@@ -155,96 +149,230 @@
             appId: "1:506023691851:web:0f550e65baccbbeabb2fce",
             measurementId: "G-F0LPJQHZPW"
         };
-    
+
         // Initialize Firebase
-        let app, auth;
+        let app;
+        let auth;
         try {
             app = initializeApp(firebaseConfig);
             auth = getAuth(app);
         } catch (error) {
             console.error('Firebase initialization error:', error);
-            showError('Failed to initialize Firebase');
+            document.getElementById('error').style.display = 'block';
+            document.getElementById('error').textContent = 'Failed to initialize Firebase';
             return;
         }
-    
+
+        // If Firebase initialization failed, skip authentication
         if (!auth) return;
-    
-        const API_URL = '/api';
-    
-        // Listen for auth state changes
+
+        // JSONBin.io Configuration
+        const JSONBIN_API_URL = 'https://api.jsonbin.io/v3/b';
+        const JSONBIN_MASTER_KEY = '$2a$10$S4HKGeJ71eTLlN9zW1ZcIexYrQ.qSpSdqOD3Vljtdou5d.4pgxdyS'; // Replace with your JSONBin.io X-Master-Key from https://jsonbin.io/api-keys
+
+        // Bin IDs (stored in localStorage for simplicity; in production, use a collection or backend)
+        const getBinIds = (userId) => ({
+            user: localStorage.getItem(`user_bin_${userId}`),
+            portfolio: localStorage.getItem(`portfolio_bin_${userId}`),
+            transactions: localStorage.getItem(`transactions_bin_${userId}`)
+        });
+
+        const setBinIds = (userId, userBinId, portfolioBinId, transactionsBinId) => {
+            localStorage.setItem(`user_bin_${userId}`, userBinId);
+            localStorage.setItem(`portfolio_bin_${userId}`, portfolioBinId);
+            localStorage.setItem(`transactions_bin_${userId}`, transactionsBinId);
+        };
+
+        // Handle Authentication State
         onAuthStateChanged(auth, async (user) => {
+            const errorMsg = document.getElementById('error');
             if (!user) {
                 window.location.href = 'index.html';
                 return;
             }
-    
+
             const email = user.email;
             const userId = user.uid;
             document.getElementById('userEmail').textContent = email;
-    
+
             try {
-                // Fetch or create user
-                const userRes = await fetch(`${API_URL}/users?email=${encodeURIComponent(email)}`);
+                let { user: userBinId, portfolio: portfolioBinId, transactions: transactionsBinId } = getBinIds(userId);
+
+                // Check if user exists
                 let userData;
-    
-                if (userRes.ok) {
-                    const data = await userRes.json();
-                    userData = data.user;
-                } else if (userRes.status === 404) {
+                if (userBinId) {
+                    const response = await fetch(`${JSONBIN_API_URL}/${userBinId}`, {
+                        headers: { 'X-Master-Key': JSONBIN_MASTER_KEY }
+                    });
+                    const data = await response.json();
+                    if (response.ok && data.record) {
+                        userData = data.record;
+                    }
+                }
+
+                if (!userData) {
+                    // Create new user bin
                     userData = {
-                        userId,
+                        id: userId,
                         email,
-                        virtualBalance: 50000.00,
-                        createdAt: new Date().toISOString()
+                        virtual_balance: 50000.00,
+                        created_at: new Date().toISOString()
                     };
-                    const createRes = await fetch(`${API_URL}/users`, {
+                    const userResponse = await fetch(JSONBIN_API_URL, {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Master-Key': JSONBIN_MASTER_KEY,
+                            'X-Bin-Private': 'true'
+                        },
                         body: JSON.stringify(userData)
                     });
-                    if (!createRes.ok) {
-                        const createErr = await createRes.json();
-                        throw new Error(createErr.error || 'Failed to create user');
-                    }
-                } else {
-                    const err = await userRes.json();
-                    throw new Error(err.error || 'Failed to fetch user');
+                    const userResult = await userResponse.json();
+                    if (!userResponse.ok) throw new Error(userResult.message || 'Failed to create user bin');
+                    userBinId = userResult.record;
+
+                    // Create portfolio bin
+                    const portfolioResponse = await fetch(JSONBIN_API_URL, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Master-Key': JSONBIN_MASTER_KEY,
+                            'X-Bin-Private': 'true'
+                        },
+                        body: JSON.stringify([])
+                    });
+                    const portfolioResult = await portfolioResponse.json();
+                    if (!portfolioResponse.ok) throw new Error(portfolioResult.message || 'Failed to create portfolio bin');
+                    portfolioBinId = portfolioResult.record;
+
+                    // Create transactions bin
+                    const transactionsResponse = await fetch(JSONBIN_API_URL, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Master-Key': JSONBIN_MASTER_KEY,
+                            'X-Bin-Private': 'true'
+                        },
+                        body: JSON.stringify([])
+                    });
+                    const transactionsResult = await transactionsResponse.json();
+                    if (!transactionsResponse.ok) throw new Error(transactionsResult.message || 'Failed to create transactions bin');
+                    transactionsBinId = transactionsResult.record;
+
+                    // Store bin IDs
+                    setBinIds(userId, userBinId, portfolioBinId, transactionsBinId);
                 }
-    
-                // Update balance
-                document.getElementById('virtualBalance').textContent =
-                    `Virtual Balance: $${userData.virtual_balance.toFixed(2)}`;
-    
-                // Portfolio
-                const portRes = await fetch(`${API_URL}/portfolio/${userId}`);
-                const portfolio = await portRes.json();
+
+                // Update virtual balance
+                document.getElementById('virtualBalance').textContent = `Virtual Balance: $${userData.virtual_balance.toFixed(2)}`;
+
+                // Fetch portfolio
+                const portfolioResponse = await fetch(`${JSONBIN_API_URL}/${portfolioBinId}`, {
+                    headers: { 'X-Master-Key': JSONBIN_MASTER_KEY }
+                });
+                const portfolioData = await portfolioResponse.json();
+                const portfolio = portfolioData.record || [];
                 document.getElementById('portfolio').textContent = portfolio.length
                     ? portfolio.map(p => `${p.stock_symbol}: ${p.quantity} shares @ $${p.avg_buy_price.toFixed(2)}`).join('\n')
                     : 'No portfolio items yet.';
-    
-                // Transactions
-                const txRes = await fetch(`${API_URL}/transactions/${userId}`);
-                const transactions = await txRes.json();
+
+                // Fetch transactions
+                const transactionsResponse = await fetch(`${JSONBIN_API_URL}/${transactionsBinId}`, {
+                    headers: { 'X-Master-Key': JSONBIN_MASTER_KEY }
+                });
+                const transactionsData = await transactionsResponse.json();
+                const transactions = transactionsData.record || [];
                 document.getElementById('transactions').textContent = transactions.length
-                    ? transactions.map(t =>
-                        `${t.type} ${t.stock_symbol}: ${t.quantity} shares @ $${t.price.toFixed(2)} on ${new Date(t.timestamp).toLocaleString()}`
-                    ).join('\n')
+                    ? transactions.map(t => `${t.type} ${t.stock_symbol}: ${t.quantity} shares @ $${t.price.toFixed(2)} on ${new Date(t.timestamp).toLocaleString()}`).join('\n')
                     : 'No transactions yet.';
-    
-                // Leaderboard
-                const lbRes = await fetch(`${API_URL}/leaderboard`);
-                const leaderboard = await lbRes.json();
+
+                // Fetch leaderboard (simplified: fetch all user bins; in production, use a collection)
+                const leaderboard = [];
+                const userBins = [userBinId]; // Placeholder: ideally fetch all bins via collection API
+                for (const binId of userBins) {
+                    const userResponse = await fetch(`${JSONBIN_API_URL}/${binId}`, {
+                        headers: { 'X-Master-Key': JSONBIN_MASTER_KEY }
+                    });
+                    const userData = await userResponse.json();
+                    if (userResponse.ok && userData.record) {
+                        const portfolioBinId = localStorage.getItem(`portfolio_bin_${userData.record.id}`);
+                        let portfolioValue = userData.record.virtual_balance;
+                        if (portfolioBinId) {
+                            const portfolioResponse = await fetch(`${JSONBIN_API_URL}/${portfolioBinId}`, {
+                                headers: { 'X-Master-Key': JSONBIN_MASTER_KEY }
+                            });
+                            const portfolioData = await portfolioResponse.json();
+                            if (portfolioResponse.ok && portfolioData.record) {
+                                portfolioValue += portfolioData.record.reduce((sum, p) => sum + p.quantity * p.avg_buy_price, 0);
+                            }
+                        }
+                        leaderboard.push({ user_id: userData.record.id, portfolio_value: portfolioValue });
+                    }
+                }
+                leaderboard.sort((a, b) => b.portfolio_value - a.portfolio_value);
                 document.getElementById('leaderboard').textContent = leaderboard.length
                     ? leaderboard.map((l, i) => `${i + 1}. ${l.user_id}: $${l.portfolio_value.toFixed(2)}`).join('\n')
                     : 'Leaderboard empty.';
-    
-            } catch (err) {
-                console.error('Dashboard error:', err);
-                showError(err.message || 'Error loading dashboard');
+            } catch (error) {
+                errorMsg.style.display = 'block';
+                errorMsg.textContent = error.message || 'Error loading dashboard';
+                console.error('Dashboard error:', error);
             }
         });
-    })();
+
+        /*
+        JSONBin.io Setup Instructions:
+        1. Sign up at https://jsonbin.io and get your X-Master-Key from https://jsonbin.io/api-keys.
+        2. Replace 'YOUR_JSONBIN_MASTER_KEY' in JSONBIN_MASTER_KEY with your API key.
+        3. Bins are created automatically for each user (private by default).
+        4. Ensure bins have Create, Read, Update permissions for the X-Master-Key.
+
+        JSON Structures:
+        - Users Bin:
+          ```json
+          {
+            "id": "firebase_user_id",
+            "email": "user@example.com",
+            "virtual_balance": 50000.00,
+            "created_at": "2025-05-02T18:58:00Z"
+          }
+          ```
+        - Portfolio Bin:
+          ```json
+          [
+            {
+              "id": 1,
+              "user_id": "firebase_user_id",
+              "stock_symbol": "AAPL",
+              "quantity": 100,
+              "avg_buy_price": 150.25
+            }
+          ]
+          ```
+        - Transactions Bin:
+          ```json
+          [
+            {
+              "id": 1,
+              "user_id": "firebase_user_id",
+              "stock_symbol": "AAPL",
+              "type": "BUY",
+              "quantity": 100,
+              "price": 150.25,
+              "timestamp": "2025-05-02T18:58:00Z"
+            }
+          ]
+          ```
+        - Leaderboard (Derived):
+          ```json
+          [
+            {
+              "user_id": "firebase_user_id",
+              "portfolio_value": 75000.50
+            }
+          ]
+          ```
+        */
     </script>
-    
 </body>
 </html>
