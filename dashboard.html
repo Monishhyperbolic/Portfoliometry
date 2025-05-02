@@ -51,6 +51,7 @@
         .card p {
             color: #ccc;
             font-size: 1rem;
+            white-space: pre-line;
         }
         .grid {
             display: grid;
@@ -75,6 +76,7 @@
             cursor: pointer;
             text-decoration: none;
             transition: background 0.3s, transform 0.2s;
+            margin-top: 1rem;
         }
         .btn:hover {
             background: #00cc6f;
@@ -84,7 +86,24 @@
             color: #ff5555;
             font-size: 0.85rem;
             text-align: center;
+            margin: 1rem auto;
+            max-width: 800px;
+            padding: 0.5rem;
+            border-radius: 8px;
+            background: rgba(255, 0, 0, 0.1);
+        }
+        #debugInfo {
+            margin-top: 1rem;
+            color: #aaa;
+            font-size: 0.8rem;
+            text-align: left;
             display: none;
+        }
+        .loading {
+            text-align: center;
+            margin: 2rem auto;
+            font-size: 1rem;
+            color: #aaa;
         }
         @media (max-width: 768px) {
             .container {
@@ -110,22 +129,25 @@
             <span id="userEmail">Loading...</span>
         </div>
         <div class="balance" id="virtualBalance">Virtual Balance: $0.00</div>
-        <p class="error" id="error">An error occurred</p>
-        <div class="grid">
+        <div class="error" id="error" style="display: none;">An error occurred</div>
+        <div id="loading" class="loading">Loading your dashboard data...</div>
+        <div class="grid" id="dashboardGrid" style="display: none;">
             <div class="card">
                 <h2>Portfolio</h2>
-                <p id="portfolio">Loading portfolio...</p>
+                <p id="portfolio">No portfolio items yet.</p>
                 <a href="ai-portfolio.html" class="btn">View AI Analysis</a>
             </div>
             <div class="card">
                 <h2>Transactions</h2>
-                <p id="transactions">Loading transactions...</p>
+                <p id="transactions">No transactions yet.</p>
             </div>
             <div class="card">
                 <h2>Leaderboard</h2>
                 <p id="leaderboard">Loading leaderboard...</p>
             </div>
         </div>
+        <div id="debugInfo"></div>
+        <button id="toggleDebug" class="btn" style="background: #333; color: #fff; margin: 1rem auto; display: block;">Show Debug Info</button>
     </div>
 
     <!-- Footer -->
@@ -150,17 +172,68 @@
             measurementId: "G-F0LPJQHZPW"
         };
 
+        // Debug functionality
+        const debugLog = [];
+        const logDebug = (message, data = null) => {
+            const timestamp = new Date().toISOString();
+            const logEntry = { timestamp, message };
+            if (data) logEntry.data = data;
+            debugLog.push(logEntry);
+            updateDebugInfo();
+            console.log(`[DEBUG] ${message}`, data || '');
+        };
+
+        const updateDebugInfo = () => {
+            const debugElement = document.getElementById('debugInfo');
+            debugElement.innerHTML = debugLog.map(entry => {
+                const time = new Date(entry.timestamp).toLocaleTimeString();
+                let message = `[${time}] ${entry.message}`;
+                if (entry.data) {
+                    if (typeof entry.data === 'object') {
+                        message += ': ' + JSON.stringify(entry.data, null, 2);
+                    } else {
+                        message += ': ' + entry.data;
+                    }
+                }
+                return message;
+            }).join('<br>');
+        };
+
+        document.getElementById('toggleDebug').addEventListener('click', () => {
+            const debugElement = document.getElementById('debugInfo');
+            if (debugElement.style.display === 'block') {
+                debugElement.style.display = 'none';
+                document.getElementById('toggleDebug').textContent = 'Show Debug Info';
+            } else {
+                debugElement.style.display = 'block';
+                document.getElementById('toggleDebug').textContent = 'Hide Debug Info';
+            }
+        });
+
         // Initialize Firebase
         let app;
         let auth;
         try {
             app = initializeApp(firebaseConfig);
             auth = getAuth(app);
+            logDebug('Firebase initialized successfully');
         } catch (error) {
             console.error('Firebase initialization error:', error);
-            document.getElementById('error').style.display = 'block';
-            document.getElementById('error').textContent = 'Failed to initialize Firebase';
+            logDebug('Firebase initialization error', error.message);
+            showError('Failed to initialize Firebase: ' + error.message);
             return;
+        }
+
+        // Helper function to show errors
+        function showError(message, details = null) {
+            const errorElement = document.getElementById('error');
+            errorElement.textContent = message;
+            errorElement.style.display = 'block';
+            document.getElementById('loading').style.display = 'none';
+            
+            if (details) {
+                logDebug('Error details', details);
+            }
         }
 
         // If Firebase initialization failed, skip authentication
@@ -168,31 +241,51 @@
 
         // JSONBin.io Configuration
         const JSONBIN_API_URL = 'https://api.jsonbin.io/v3/b';
-        const JSONBIN_MASTER_KEY = '$2a$10$S4HKGeJ71eTLlN9zW1ZcIexYrQ.qSpSdqOD3Vljtdou5d.4pgxdyS'; // Replace with your JSONBin.io X-Master-Key from https://jsonbin.io/api-keys
+        const JSONBIN_MASTER_KEY = '$2a$10$S4HKGeJ71eTLlN9zW1ZcIexYrQ.qSpSdqOD3Vljtdou5d.4pgxdyS';
 
-        // Bin IDs (stored in localStorage for simplicity; in production, use a collection or backend)
-        const getBinIds = (userId) => ({
-            user: localStorage.getItem(`user_bin_${userId}`),
-            portfolio: localStorage.getItem(`portfolio_bin_${userId}`),
-            transactions: localStorage.getItem(`transactions_bin_${userId}`)
-        });
+        // Bin IDs (stored in localStorage for simplicity)
+        const getBinIds = (userId) => {
+            const userBin = localStorage.getItem(`user_bin_${userId}`);
+            const portfolioBin = localStorage.getItem(`portfolio_bin_${userId}`);
+            const transactionsBin = localStorage.getItem(`transactions_bin_${userId}`);
+            
+            logDebug('Retrieved bin IDs from localStorage', {
+                userBin,
+                portfolioBin,
+                transactionsBin
+            });
+            
+            return {
+                user: userBin,
+                portfolio: portfolioBin,
+                transactions: transactionsBin
+            };
+        };
 
         const setBinIds = (userId, userBinId, portfolioBinId, transactionsBinId) => {
             localStorage.setItem(`user_bin_${userId}`, userBinId);
             localStorage.setItem(`portfolio_bin_${userId}`, portfolioBinId);
             localStorage.setItem(`transactions_bin_${userId}`, transactionsBinId);
+            
+            logDebug('Stored bin IDs in localStorage', {
+                userBinId,
+                portfolioBinId,
+                transactionsBinId
+            });
         };
 
         // Handle Authentication State
         onAuthStateChanged(auth, async (user) => {
-            const errorMsg = document.getElementById('error');
             if (!user) {
+                logDebug('No user authenticated, redirecting to login');
                 window.location.href = 'index.html';
                 return;
             }
 
             const email = user.email;
             const userId = user.uid;
+            logDebug('User authenticated', { email, userId });
+            
             document.getElementById('userEmail').textContent = email;
 
             try {
@@ -201,16 +294,32 @@
                 // Check if user exists
                 let userData;
                 if (userBinId) {
-                    const response = await fetch(`${JSONBIN_API_URL}/${userBinId}`, {
-                        headers: { 'X-Master-Key': JSONBIN_MASTER_KEY }
-                    });
-                    const data = await response.json();
-                    if (response.ok && data.record) {
-                        userData = data.record;
+                    logDebug('User bin ID found, fetching user data', userBinId);
+                    
+                    try {
+                        const response = await fetch(`${JSONBIN_API_URL}/${userBinId}`, {
+                            headers: { 
+                                'X-Master-Key': JSONBIN_MASTER_KEY,
+                                'X-Bin-Meta': false
+                            }
+                        });
+                        
+                        if (!response.ok) {
+                            throw new Error(`Failed to fetch user data: ${response.status} ${response.statusText}`);
+                        }
+                        
+                        const data = await response.json();
+                        userData = data;
+                        logDebug('User data fetched successfully', userData);
+                    } catch (error) {
+                        logDebug('Error fetching user data', error.message);
+                        // We'll create a new user below if this fails
                     }
                 }
 
                 if (!userData) {
+                    logDebug('No user data found, creating new user');
+                    
                     // Create new user bin
                     userData = {
                         id: userId,
@@ -218,161 +327,171 @@
                         virtual_balance: 50000.00,
                         created_at: new Date().toISOString()
                     };
-                    const userResponse = await fetch(JSONBIN_API_URL, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-Master-Key': JSONBIN_MASTER_KEY,
-                            'X-Bin-Private': 'true'
-                        },
-                        body: JSON.stringify(userData)
-                    });
-                    const userResult = await userResponse.json();
-                    if (!userResponse.ok) throw new Error(userResult.message || 'Failed to create user bin');
-                    userBinId = userResult.record;
+                    
+                    logDebug('Creating user bin with data', userData);
+                    
+                    try {
+                        const userResponse = await fetch(JSONBIN_API_URL, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-Master-Key': JSONBIN_MASTER_KEY,
+                                'X-Bin-Private': 'true',
+                                'X-Bin-Name': `user_${userId}`
+                            },
+                            body: JSON.stringify(userData)
+                        });
+                        
+                        if (!userResponse.ok) {
+                            const error = await userResponse.json();
+                            throw new Error(`Failed to create user bin: ${error.message || userResponse.statusText}`);
+                        }
+                        
+                        const userResult = await userResponse.json();
+                        logDebug('User bin created successfully', userResult);
+                        
+                        userBinId = userResult.metadata.id;
+                        logDebug('User bin ID extracted', userBinId);
+                        
+                        // Create portfolio bin
+                        logDebug('Creating empty portfolio bin');
+                        const portfolioResponse = await fetch(JSONBIN_API_URL, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-Master-Key': JSONBIN_MASTER_KEY,
+                                'X-Bin-Private': 'true',
+                                'X-Bin-Name': `portfolio_${userId}`
+                            },
+                            body: JSON.stringify([])
+                        });
+                        
+                        if (!portfolioResponse.ok) {
+                            const error = await portfolioResponse.json();
+                            throw new Error(`Failed to create portfolio bin: ${error.message || portfolioResponse.statusText}`);
+                        }
+                        
+                        const portfolioResult = await portfolioResponse.json();
+                        logDebug('Portfolio bin created successfully', portfolioResult);
+                        
+                        portfolioBinId = portfolioResult.metadata.id;
+                        logDebug('Portfolio bin ID extracted', portfolioBinId);
 
-                    // Create portfolio bin
-                    const portfolioResponse = await fetch(JSONBIN_API_URL, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-Master-Key': JSONBIN_MASTER_KEY,
-                            'X-Bin-Private': 'true'
-                        },
-                        body: JSON.stringify([])
-                    });
-                    const portfolioResult = await portfolioResponse.json();
-                    if (!portfolioResponse.ok) throw new Error(portfolioResult.message || 'Failed to create portfolio bin');
-                    portfolioBinId = portfolioResult.record;
+                        // Create transactions bin
+                        logDebug('Creating empty transactions bin');
+                        const transactionsResponse = await fetch(JSONBIN_API_URL, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-Master-Key': JSONBIN_MASTER_KEY,
+                                'X-Bin-Private': 'true',
+                                'X-Bin-Name': `transactions_${userId}`
+                            },
+                            body: JSON.stringify([])
+                        });
+                        
+                        if (!transactionsResponse.ok) {
+                            const error = await transactionsResponse.json();
+                            throw new Error(`Failed to create transactions bin: ${error.message || transactionsResponse.statusText}`);
+                        }
+                        
+                        const transactionsResult = await transactionsResponse.json();
+                        logDebug('Transactions bin created successfully', transactionsResult);
+                        
+                        transactionsBinId = transactionsResult.metadata.id;
+                        logDebug('Transactions bin ID extracted', transactionsBinId);
 
-                    // Create transactions bin
-                    const transactionsResponse = await fetch(JSONBIN_API_URL, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-Master-Key': JSONBIN_MASTER_KEY,
-                            'X-Bin-Private': 'true'
-                        },
-                        body: JSON.stringify([])
-                    });
-                    const transactionsResult = await transactionsResponse.json();
-                    if (!transactionsResponse.ok) throw new Error(transactionsResult.message || 'Failed to create transactions bin');
-                    transactionsBinId = transactionsResult.record;
-
-                    // Store bin IDs
-                    setBinIds(userId, userBinId, portfolioBinId, transactionsBinId);
+                        // Store bin IDs
+                        setBinIds(userId, userBinId, portfolioBinId, transactionsBinId);
+                        logDebug('All bin IDs stored successfully');
+                    } catch (error) {
+                        showError(`Failed to create user data: ${error.message}`);
+                        return;
+                    }
                 }
 
                 // Update virtual balance
                 document.getElementById('virtualBalance').textContent = `Virtual Balance: $${userData.virtual_balance.toFixed(2)}`;
+                logDebug('Updated virtual balance display', userData.virtual_balance);
 
                 // Fetch portfolio
-                const portfolioResponse = await fetch(`${JSONBIN_API_URL}/${portfolioBinId}`, {
-                    headers: { 'X-Master-Key': JSONBIN_MASTER_KEY }
-                });
-                const portfolioData = await portfolioResponse.json();
-                const portfolio = portfolioData.record || [];
-                document.getElementById('portfolio').textContent = portfolio.length
-                    ? portfolio.map(p => `${p.stock_symbol}: ${p.quantity} shares @ $${p.avg_buy_price.toFixed(2)}`).join('\n')
-                    : 'No portfolio items yet.';
+                try {
+                    logDebug('Fetching portfolio data', portfolioBinId);
+                    const portfolioResponse = await fetch(`${JSONBIN_API_URL}/${portfolioBinId}`, {
+                        headers: { 
+                            'X-Master-Key': JSONBIN_MASTER_KEY,
+                            'X-Bin-Meta': false
+                        }
+                    });
+                    
+                    if (!portfolioResponse.ok) {
+                        throw new Error(`Failed to fetch portfolio: ${portfolioResponse.status} ${portfolioResponse.statusText}`);
+                    }
+                    
+                    const portfolio = await portfolioResponse.json();
+                    logDebug('Portfolio data fetched', portfolio);
+                    
+                    document.getElementById('portfolio').textContent = portfolio.length
+                        ? portfolio.map(p => `${p.stock_symbol}: ${p.quantity} shares @ $${p.avg_buy_price.toFixed(2)}`).join('\n')
+                        : 'No portfolio items yet.';
+                } catch (error) {
+                    logDebug('Error fetching portfolio', error.message);
+                    document.getElementById('portfolio').textContent = 'Error loading portfolio data.';
+                }
 
                 // Fetch transactions
-                const transactionsResponse = await fetch(`${JSONBIN_API_URL}/${transactionsBinId}`, {
-                    headers: { 'X-Master-Key': JSONBIN_MASTER_KEY }
-                });
-                const transactionsData = await transactionsResponse.json();
-                const transactions = transactionsData.record || [];
-                document.getElementById('transactions').textContent = transactions.length
-                    ? transactions.map(t => `${t.type} ${t.stock_symbol}: ${t.quantity} shares @ $${t.price.toFixed(2)} on ${new Date(t.timestamp).toLocaleString()}`).join('\n')
-                    : 'No transactions yet.';
-
-                // Fetch leaderboard (simplified: fetch all user bins; in production, use a collection)
-                const leaderboard = [];
-                const userBins = [userBinId]; // Placeholder: ideally fetch all bins via collection API
-                for (const binId of userBins) {
-                    const userResponse = await fetch(`${JSONBIN_API_URL}/${binId}`, {
-                        headers: { 'X-Master-Key': JSONBIN_MASTER_KEY }
-                    });
-                    const userData = await userResponse.json();
-                    if (userResponse.ok && userData.record) {
-                        const portfolioBinId = localStorage.getItem(`portfolio_bin_${userData.record.id}`);
-                        let portfolioValue = userData.record.virtual_balance;
-                        if (portfolioBinId) {
-                            const portfolioResponse = await fetch(`${JSONBIN_API_URL}/${portfolioBinId}`, {
-                                headers: { 'X-Master-Key': JSONBIN_MASTER_KEY }
-                            });
-                            const portfolioData = await portfolioResponse.json();
-                            if (portfolioResponse.ok && portfolioData.record) {
-                                portfolioValue += portfolioData.record.reduce((sum, p) => sum + p.quantity * p.avg_buy_price, 0);
-                            }
+                try {
+                    logDebug('Fetching transactions data', transactionsBinId);
+                    const transactionsResponse = await fetch(`${JSONBIN_API_URL}/${transactionsBinId}`, {
+                        headers: { 
+                            'X-Master-Key': JSONBIN_MASTER_KEY,
+                            'X-Bin-Meta': false
                         }
-                        leaderboard.push({ user_id: userData.record.id, portfolio_value: portfolioValue });
+                    });
+                    
+                    if (!transactionsResponse.ok) {
+                        throw new Error(`Failed to fetch transactions: ${transactionsResponse.status} ${transactionsResponse.statusText}`);
                     }
+                    
+                    const transactions = await transactionsResponse.json();
+                    logDebug('Transactions data fetched', transactions);
+                    
+                    document.getElementById('transactions').textContent = transactions.length
+                        ? transactions.map(t => `${t.type} ${t.stock_symbol}: ${t.quantity} shares @ $${t.price.toFixed(2)} on ${new Date(t.timestamp).toLocaleString()}`).join('\n')
+                        : 'No transactions yet.';
+                } catch (error) {
+                    logDebug('Error fetching transactions', error.message);
+                    document.getElementById('transactions').textContent = 'Error loading transaction data.';
                 }
-                leaderboard.sort((a, b) => b.portfolio_value - a.portfolio_value);
-                document.getElementById('leaderboard').textContent = leaderboard.length
-                    ? leaderboard.map((l, i) => `${i + 1}. ${l.user_id}: $${l.portfolio_value.toFixed(2)}`).join('\n')
-                    : 'Leaderboard empty.';
+
+                // Simple leaderboard (just the current user for demo)
+                try {
+                    const leaderboard = [
+                        {
+                            user_id: userId,
+                            email: email,
+                            portfolio_value: userData.virtual_balance
+                        }
+                    ];
+                    
+                    document.getElementById('leaderboard').textContent = 
+                        `1. ${email}: $${userData.virtual_balance.toFixed(2)}`;
+                    
+                    logDebug('Leaderboard updated (simplified version)', leaderboard);
+                } catch (error) {
+                    logDebug('Error creating leaderboard', error.message);
+                    document.getElementById('leaderboard').textContent = 'Error loading leaderboard data.';
+                }
+
+                // Hide loading, show dashboard
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('dashboardGrid').style.display = 'grid';
+                logDebug('Dashboard loaded successfully');
+                
             } catch (error) {
-                errorMsg.style.display = 'block';
-                errorMsg.textContent = error.message || 'Error loading dashboard';
-                console.error('Dashboard error:', error);
+                showError(`Error loading dashboard: ${error.message}`, error);
             }
         });
-
-        /*
-        JSONBin.io Setup Instructions:
-        1. Sign up at https://jsonbin.io and get your X-Master-Key from https://jsonbin.io/api-keys.
-        2. Replace 'YOUR_JSONBIN_MASTER_KEY' in JSONBIN_MASTER_KEY with your API key.
-        3. Bins are created automatically for each user (private by default).
-        4. Ensure bins have Create, Read, Update permissions for the X-Master-Key.
-
-        JSON Structures:
-        - Users Bin:
-          ```json
-          {
-            "id": "firebase_user_id",
-            "email": "user@example.com",
-            "virtual_balance": 50000.00,
-            "created_at": "2025-05-02T18:58:00Z"
-          }
-          ```
-        - Portfolio Bin:
-          ```json
-          [
-            {
-              "id": 1,
-              "user_id": "firebase_user_id",
-              "stock_symbol": "AAPL",
-              "quantity": 100,
-              "avg_buy_price": 150.25
-            }
-          ]
-          ```
-        - Transactions Bin:
-          ```json
-          [
-            {
-              "id": 1,
-              "user_id": "firebase_user_id",
-              "stock_symbol": "AAPL",
-              "type": "BUY",
-              "quantity": 100,
-              "price": 150.25,
-              "timestamp": "2025-05-02T18:58:00Z"
-            }
-          ]
-          ```
-        - Leaderboard (Derived):
-          ```json
-          [
-            {
-              "user_id": "firebase_user_id",
-              "portfolio_value": 75000.50
-            }
-          ]
-          ```
-        */
     </script>
 </body>
 </html>
