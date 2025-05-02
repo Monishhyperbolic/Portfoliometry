@@ -170,11 +170,11 @@
             measurementId: "G-F0LPJQHZPW"
         };
 
-        // JSONBin.io Configuration - USING YOUR EXISTING BINS
+        // JSONBin.io Configuration
         const JSONBIN_API_URL = 'https://api.jsonbin.io/v3/b';
         const JSONBIN_MASTER_KEY = '$2a$10$S4HKGeJ71eTLlN9zW1ZcIexYrQ.qSpSdqOD3Vljtdou5d.4pgxdyS';
         
-        // Your existing bin IDs
+        // Bin IDs
         const USERS_BIN_ID = '6814c8f58561e97a500c4c61';
         const PORTFOLIO_BIN_ID = '6814c9028561e97a500c4c6c';
         const TRANSACTIONS_BIN_ID = '6814c9138561e97a500c4c7a';
@@ -194,6 +194,31 @@
             console.error(message);
         }
 
+        // Fetch with retry for rate limits
+        async function fetchWithRetry(url, options, retries = 5, delay = 1000) {
+            for (let i = 0; i < retries; i++) {
+                try {
+                    const response = await fetch(url, options);
+                    if (response.status === 429 && i < retries - 1) {
+                        const wait = delay * Math.pow(2, i);
+                        showStatus(`Rate limit hit, retrying in ${wait}ms...`);
+                        await new Promise(resolve => setTimeout(resolve, wait));
+                        continue;
+                    }
+                    if (!response.ok) {
+                        let errorMessage = `HTTP ${response.status}`;
+                        if (response.status === 403) errorMessage = `Unauthorized access to bin. Check X-Master-Key permissions.`;
+                        if (response.status === 404) errorMessage = `Bin not found. Verify bin ID at jsonbin.io.`;
+                        if (response.status === 429) errorMessage = `Rate limit exceeded after retries.`;
+                        throw new Error(errorMessage);
+                    }
+                    return response;
+                } catch (error) {
+                    if (i === retries - 1) throw error;
+                }
+            }
+        }
+
         // Initialize Firebase
         let app;
         let auth;
@@ -206,8 +231,10 @@
             return;
         }
 
-        // If Firebase initialization failed, skip authentication
-        if (!auth) return;
+        if (!auth) {
+            showError('Firebase auth initialization failed.');
+            return;
+        }
 
         // Handle Authentication State
         onAuthStateChanged(auth, async (user) => {
@@ -220,43 +247,20 @@
             const email = user.email;
             const userId = user.uid;
             showStatus(`User authenticated: ${email}`);
-            
             document.getElementById('userEmail').textContent = email;
 
             try {
                 // Fetch users data
                 showStatus('Fetching users data');
-                let usersResponse = await fetch(`${JSONBIN_API_URL}/${USERS_BIN_ID}`, {
-                    headers: { 
-                        'X-Master-Key': JSONBIN_MASTER_KEY 
-                    }
+                let usersResponse = await fetchWithRetry(`${JSONBIN_API_URL}/${USERS_BIN_ID}`, {
+                    headers: { 'X-Master-Key': JSONBIN_MASTER_KEY }
                 });
-                
-                if (!usersResponse.ok) {
-                    throw new Error(`Failed to fetch users data: ${usersResponse.status}`);
-                }
-                
                 let usersData = await usersResponse.json();
                 let users = Array.isArray(usersData.record) ? usersData.record : [];
-                
-                // Find or create user
-                let userData = users.find(u => u.id === userId);
-                
-                if (!userData) {
-                    // Create new user
-                    showStatus('Creating new user');
-                    userData = {
-                        id: userId,
-                        email,
-                        virtual_balance: 50000.00,
-                        created_at: new Date().toISOString()
-                    };
-                    
-                    // Add user to the array
-                    users.push(userData);
-                    
-                    // Update users bin
-                    const updateResponse = await fetch(`${JSONBIN_API_URL}/${USERS_BIN_ID}`, {
+                if (!Array.isArray(usersData.record)) {
+                    showStatus('Users bin is not an array, initializing...');
+                    users = [];
+                    await fetchWithRetry(`${JSONBIN_API_URL}/${USERS_BIN_ID}`, {
                         method: 'PUT',
                         headers: {
                             'Content-Type': 'application/json',
@@ -264,105 +268,120 @@
                         },
                         body: JSON.stringify(users)
                     });
-                    
-                    if (!updateResponse.ok) {
-                        throw new Error(`Failed to update users: ${updateResponse.status}`);
-                    }
-                    
+                }
+                
+                // Find or create user
+                let userData = users.find(u => u.id === userId);
+                if (!userData) {
+                    showStatus('Creating new user');
+                    userData = {
+                        id: userId,
+                        email,
+                        virtual_balance: 50000.00,
+                        created_at: new Date().toISOString()
+                    };
+                    users.push(userData);
+                    const updateResponse = await fetchWithRetry(`${JSONBIN_API_URL}/${USERS_BIN_ID}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Master-Key': JSONBIN_MASTER_KEY
+                        },
+                        body: JSON.stringify(users)
+                    });
                     showStatus('New user created successfully');
                 } else {
                     showStatus('Existing user found');
                 }
 
-                // Update virtual balance display
                 document.getElementById('virtualBalance').textContent = `Virtual Balance: $${userData.virtual_balance.toFixed(2)}`;
 
                 // Fetch portfolio data
                 showStatus('Fetching portfolio data');
-                const portfolioResponse = await fetch(`${JSONBIN_API_URL}/${PORTFOLIO_BIN_ID}`, {
+                const portfolioResponse = await fetchWithRetry(`${JSONBIN_API_URL}/${PORTFOLIO_BIN_ID}`, {
                     headers: { 'X-Master-Key': JSONBIN_MASTER_KEY }
                 });
-                
-                if (!portfolioResponse.ok) {
-                    throw new Error(`Failed to fetch portfolio: ${portfolioResponse.status}`);
-                }
-                
                 const portfolioData = await portfolioResponse.json();
-                const portfolios = Array.isArray(portfolioData.record) ? portfolioData.record : [];
-                
-                // Filter user's portfolio items
+                let portfolios = Array.isArray(portfolioData.record) ? portfolioData.record : [];
+                if (!Array.isArray(portfolioData.record)) {
+                    showStatus('Portfolio bin is not an array, initializing...');
+                    portfolios = [];
+                    await fetchWithRetry(`${JSONBIN_API_URL}/${PORTFOLIO_BIN_ID}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Master-Key': JSONBIN_MASTER_KEY
+                        },
+                        body: JSON.stringify(portfolios)
+                    });
+                }
                 const userPortfolio = portfolios.filter(p => p.user_id === userId);
-                
                 if (userPortfolio.length > 0) {
                     document.getElementById('portfolio').textContent = userPortfolio
                         .map(p => `${p.stock_symbol}: ${p.quantity} shares @ $${p.avg_buy_price.toFixed(2)}`)
                         .join('\n');
-                } else {
-                    document.getElementById('portfolio').textContent = 'No portfolio items yet.';
                 }
 
                 // Fetch transactions data
                 showStatus('Fetching transactions data');
-                const transactionsResponse = await fetch(`${JSONBIN_API_URL}/${TRANSACTIONS_BIN_ID}`, {
+                const transactionsResponse = await fetchWithRetry(`${JSONBIN_API_URL}/${TRANSACTIONS_BIN_ID}`, {
                     headers: { 'X-Master-Key': JSONBIN_MASTER_KEY }
                 });
-                
-                if (!transactionsResponse.ok) {
-                    throw new Error(`Failed to fetch transactions: ${transactionsResponse.status}`);
-                }
-                
                 const transactionsData = await transactionsResponse.json();
-                const transactions = Array.isArray(transactionsData.record) ? transactionsData.record : [];
-                
-                // Filter user's transactions
+                let transactions = Array.isArray(transactionsData.record) ? transactionsData.record : [];
+                if (!Array.isArray(transactionsData.record)) {
+                    showStatus('Transactions bin is not an array, initializing...');
+                    transactions = [];
+                    await fetchWithRetry(`${JSONBIN_API_URL}/${TRANSACTIONS_BIN_ID}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Master-Key': JSONBIN_MASTER_KEY
+                        },
+                        body: JSON.stringify(transactions)
+                    });
+                }
                 const userTransactions = transactions.filter(t => t.user_id === userId);
-                
                 if (userTransactions.length > 0) {
                     document.getElementById('transactions').textContent = userTransactions
                         .map(t => `${t.type} ${t.stock_symbol}: ${t.quantity} shares @ $${t.price.toFixed(2)} on ${new Date(t.timestamp).toLocaleString()}`)
                         .join('\n');
-                } else {
-                    document.getElementById('transactions').textContent = 'No transactions yet.';
                 }
 
                 // Fetch or generate leaderboard
                 showStatus('Fetching leaderboard data');
+                let leaderboardItems = [];
                 try {
-                    const leaderboardResponse = await fetch(`${JSONBIN_API_URL}/${LEADERBOARD_BIN_ID}`, {
+                    const leaderboardResponse = await fetchWithRetry(`${JSONBIN_API_URL}/${LEADERBOARD_BIN_ID}`, {
                         headers: { 'X-Master-Key': JSONBIN_MASTER_KEY }
                     });
-                    
-                    let leaderboardItems = [];
-                    
-                    if (leaderboardResponse.ok) {
-                        const leaderboardData = await leaderboardResponse.json();
-                        leaderboardItems = Array.isArray(leaderboardData.record) ? leaderboardData.record : [];
+                    const leaderboardData = await leaderboardResponse.json();
+                    leaderboardItems = Array.isArray(leaderboardData.record) ? leaderboardData.record : [];
+                    if (!Array.isArray(leaderboardData.record)) {
+                        showStatus('Leaderboard bin is not an array, initializing...');
+                        leaderboardItems = [];
+                        await fetchWithRetry(`${JSONBIN_API_URL}/${LEADERBOARD_BIN_ID}`, {
+                            method: 'PUT',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-Master-Key': JSONBIN_MASTER_KEY
+                            },
+                            body: JSON.stringify(leaderboardItems)
+                        });
                     }
                     
-                    // If leaderboard is empty or doesn't exist, generate it
                     if (leaderboardItems.length === 0) {
-                        // Calculate all users' portfolio values
                         const leaderboard = users.map(u => {
-                            // Get user's portfolio
                             const userStocks = portfolios.filter(p => p.user_id === u.id);
-                            
-                            // Calculate portfolio value
-                            const stocksValue = userStocks.reduce((sum, stock) => {
-                                return sum + (stock.quantity * stock.avg_buy_price);
-                            }, 0);
-                            
+                            const stocksValue = userStocks.reduce((sum, stock) => sum + (stock.quantity * stock.avg_buy_price), 0);
                             return {
                                 user_id: u.id,
                                 email: u.email,
                                 portfolio_value: u.virtual_balance + stocksValue
                             };
                         });
-                        
-                        // Sort by highest value
                         leaderboard.sort((a, b) => b.portfolio_value - a.portfolio_value);
-                        
-                        // Update leaderboard in JSONBin
-                        await fetch(`${JSONBIN_API_URL}/${LEADERBOARD_BIN_ID}`, {
+                        await fetchWithRetry(`${JSONBIN_API_URL}/${LEADERBOARD_BIN_ID}`, {
                             method: 'PUT',
                             headers: {
                                 'Content-Type': 'application/json',
@@ -370,30 +389,39 @@
                             },
                             body: JSON.stringify(leaderboard)
                         });
-                        
                         leaderboardItems = leaderboard;
                     }
                     
-                    // Display leaderboard
                     document.getElementById('leaderboard').textContent = leaderboardItems
                         .map((entry, index) => `${index + 1}. ${entry.email}: $${entry.portfolio_value.toFixed(2)}`)
                         .join('\n');
-                    
                 } catch (error) {
-                    // If there's an error with leaderboard, just show a basic entry for the current user
                     document.getElementById('leaderboard').textContent = `1. ${email}: $${userData.virtual_balance.toFixed(2)}`;
                     showStatus(`Leaderboard error: ${error.message}, showing basic data`);
                 }
 
-                // Hide loading, show dashboard
                 document.getElementById('loading').style.display = 'none';
                 document.getElementById('dashboardGrid').style.display = 'grid';
                 showStatus('Dashboard loaded successfully');
-                
             } catch (error) {
-                showError(`Error loading dashboard: ${error.message}`);
+                showError(`Error loading dashboard: ${error.message}. Check console for details.`);
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('dashboardGrid').style.display = 'grid';
             }
         });
+
+        /*
+        JSONBin.io Setup:
+        1. Verify bin IDs (6814c8f58561e97a500c4c61, etc.) exist at https://jsonbin.io with X-Master-Key.
+        2. Initialize bins with empty arrays: [] (users, portfolio, transactions, leaderboard).
+        3. Example: curl -X PUT https://api.jsonbin.io/v3/b/6814c8f58561e97a500c4c61 -H "Content-Type: application/json" -H "X-Master-Key: $2a$10$S4HKGeJ71eTLlN9zW1ZcIexYrQ.qSpSdqOD3Vljtdou5d.4pgxdyS" -d '[]'
+
+        JSON Structures:
+        - Users: [{"id": "user_id", "email": "user@example.com", "virtual_balance": 50000.00, "created_at": "2025-05-02T18:58:00Z"}]
+        - Portfolio: [{"id": 1, "user_id": "user_id", "stock_symbol": "AAPL", "quantity": 100, "avg_buy_price": 150.25}]
+        - Transactions: [{"id": 1, "user_id": "user_id", "stock_symbol": "AAPL", "type": "BUY", "quantity": 100, "price": 150.25, "timestamp": "2025-05-02T18:58:00Z"}]
+        - Leaderboard: [{"user_id": "user_id", "email": "user@example.com", "portfolio_value": 75000.50}]
+        */
     </script>
 </body>
 </html>
