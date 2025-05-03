@@ -42,6 +42,7 @@
             margin-bottom: 1.5rem;
             border: 1px solid rgba(255, 255, 255, 0.1);
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            position: relative;
         }
         .card h2 {
             font-size: 1.5rem;
@@ -52,6 +53,15 @@
             color: #ccc;
             font-size: 1rem;
             white-space: pre-line;
+        }
+        .card .card-loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #aaa;
+            font-size: 0.9rem;
+            display: none;
         }
         .grid {
             display: grid;
@@ -131,18 +141,21 @@
         <div class="error" id="error" style="display: none;">An error occurred</div>
         <div id="loading" class="loading">Loading your dashboard data...</div>
         <div class="grid" id="dashboardGrid" style="display: none;">
-            <div class="card">
+            <div class="card" id="portfolioCard">
                 <h2>Portfolio</h2>
                 <p id="portfolio">No portfolio items yet.</p>
+                <div class="card-loading" id="portfolioLoading">Loading...</div>
                 <a href="ai-portfolio.html" class="btn">View AI Analysis</a>
             </div>
-            <div class="card">
+            <div class="card" id="transactionsCard">
                 <h2>Transactions</h2>
                 <p id="transactions">No transactions yet.</p>
+                <div class="card-loading" id="transactionsLoading">Loading...</div>
             </div>
-            <div class="card">
+            <div class="card" id="leaderboardCard">
                 <h2>Leaderboard</h2>
                 <p id="leaderboard">Loading leaderboard...</p>
+                <div class="card-loading" id="leaderboardLoading">Loading...</div>
             </div>
         </div>
         <div id="status" class="status"></div>
@@ -171,6 +184,7 @@
         };
 
         // JSONBin.io Configuration
+        // SECURITY WARNING: X-Master-Key is exposed in client-side code. Move to a server-side proxy for production.
         const JSONBIN_API_URL = 'https://api.jsonbin.io/v3/b';
         const JSONBIN_MASTER_KEY = '$2a$10$S4HKGeJ71eTLlN9zW1ZcIexYrQ.qSpSdqOD3Vljtdou5d.4pgxdyS';
         
@@ -180,9 +194,10 @@
         const TRANSACTIONS_BIN_ID = '6814c9138561e97a500c4c7a';
         const LEADERBOARD_BIN_ID = '6814c9368561e97a500c4c9c';
 
-        // Helper functions
+        // Helper Functions
         function showStatus(message) {
-            document.getElementById('status').textContent = message;
+            const statusElement = document.getElementById('status');
+            statusElement.textContent = message;
             console.log(`[Status] ${message}`);
         }
 
@@ -195,8 +210,15 @@
             console.error(`[Error] ${message}`);
         }
 
-        // Fetch with timeout and retry
-        async function fetchWithRetry(url, options, retries = 5, delay = 1000, timeout = 5000) {
+        function toggleCardLoading(cardId, show) {
+            const card = document.getElementById(cardId);
+            const loading = document.getElementById(`${cardId}Loading`);
+            loading.style.display = show ? 'block' : 'none';
+            card.querySelector('p').style.display = show ? 'none' : 'block';
+        }
+
+        // Fetch with timeout and exponential backoff retry
+        async function fetchWithRetry(url, options, retries = 5, baseDelay = 1000, timeout = 5000) {
             for (let i = 0; i < retries; i++) {
                 try {
                     showStatus(`Attempt ${i + 1} for ${url}`);
@@ -205,16 +227,16 @@
                     const response = await fetch(url, { ...options, signal: controller.signal });
                     clearTimeout(id);
                     if (response.status === 429 && i < retries - 1) {
-                        const wait = delay * Math.pow(2, i);
+                        const wait = baseDelay * Math.pow(2, i);
                         showStatus(`Rate limit hit, retrying in ${wait}ms...`);
                         await new Promise(resolve => setTimeout(resolve, wait));
                         continue;
                     }
                     if (!response.ok) {
                         let errorMessage = `HTTP ${response.status}`;
-                        if (response.status === 403) errorMessage = `Unauthorized access to bin. Check X-Master-Key permissions at jsonbin.io.`;
-                        if (response.status === 404) errorMessage = `Bin not found. Verify bin ID at jsonbin.io.`;
-                        if (response.status === 429) errorMessage = `Rate limit exceeded after retries.`;
+                        if (response.status === 403) errorMessage = 'Unauthorized access to bin. Check X-Master-Key permissions at jsonbin.io.';
+                        if (response.status === 404) errorMessage = 'Bin not found. Verify bin ID at jsonbin.io.';
+                        if (response.status === 429) errorMessage = 'Rate limit exceeded after retries.';
                         throw new Error(errorMessage);
                     }
                     showStatus(`Fetch successful for ${url}`);
@@ -225,6 +247,9 @@
                         throw new Error(`Request timed out after ${timeout}ms`);
                     }
                     if (i === retries - 1) throw error;
+                    const wait = baseDelay * Math.pow(2, i);
+                    showStatus(`Retrying after ${wait}ms due to error: ${error.message}`);
+                    await new Promise(resolve => setTimeout(resolve, wait));
                 }
             }
         }
@@ -258,14 +283,16 @@
             }
 
             const email = user.email;
-            const userId = user.uid;
             showStatus(`User authenticated: ${email}`);
             document.getElementById('userEmail').textContent = email;
 
             try {
-                // Fetch users data
+                // Fetch and initialize users data
                 showStatus('Starting users fetch');
-                let usersResponse = await fetchWithRetry(`${JSONBIN_API_URL}/${USERS_BIN_ID}`, {
+                toggleCardLoading('portfolioCard', true);
+                toggleCardLoading('transactionsCard', true);
+                toggleCardLoading('leaderboardCard', true);
+                let usersResponse = await fetchWithRetry(`${JSONBIN_API_URL}/${USERS_BIN_ID}/latest`, {
                     headers: { 'X-Master-Key': JSONBIN_MASTER_KEY }
                 });
                 showStatus('Parsing users data');
@@ -286,11 +313,10 @@
                 }
                 
                 // Find or create user
-                let userData = users.find(u => u.id === userId);
+                let userData = users.find(u => u.email === email);
                 if (!userData) {
                     showStatus('Creating new user');
                     userData = {
-                        id: userId,
                         email,
                         virtual_balance: 50000.00,
                         created_at: new Date().toISOString()
@@ -305,7 +331,17 @@
                         },
                         body: JSON.stringify(users)
                     });
-                    showStatus('New user created');
+                    // Verify update
+                    usersResponse = await fetchWithRetry(`${JSONBIN_API_URL}/${USERS_BIN_ID}/latest`, {
+                        headers: { 'X-Master-Key': JSONBIN_MASTER_KEY }
+                    });
+                    usersData = await usersResponse.json();
+                    users = Array.isArray(usersData.record) ? usersData.record : [];
+                    userData = users.find(u => u.email === email);
+                    if (!userData) {
+                        throw new Error('Failed to persist new user data');
+                    }
+                    showStatus('New user created and verified');
                 } else {
                     showStatus('Existing user found');
                 }
@@ -314,7 +350,7 @@
 
                 // Fetch portfolio data
                 showStatus('Starting portfolio fetch');
-                const portfolioResponse = await fetchWithRetry(`${JSONBIN_API_URL}/${PORTFOLIO_BIN_ID}`, {
+                const portfolioResponse = await fetchWithRetry(`${JSONBIN_API_URL}/${PORTFOLIO_BIN_ID}/latest`, {
                     headers: { 'X-Master-Key': JSONBIN_MASTER_KEY }
                 });
                 showStatus('Parsing portfolio data');
@@ -333,16 +369,17 @@
                     });
                     showStatus('Portfolio bin initialized');
                 }
-                const userPortfolio = portfolios.filter(p => p.user_id === userId);
+                const userPortfolio = portfolios.filter(p => p.email === email);
                 if (userPortfolio.length > 0) {
                     document.getElementById('portfolio').textContent = userPortfolio
                         .map(p => `${p.stock_symbol}: ${p.quantity} shares @ $${p.avg_buy_price.toFixed(2)}`)
                         .join('\n');
                 }
+                toggleCardLoading('portfolioCard', false);
 
                 // Fetch transactions data
                 showStatus('Starting transactions fetch');
-                const transactionsResponse = await fetchWithRetry(`${JSONBIN_API_URL}/${TRANSACTIONS_BIN_ID}`, {
+                const transactionsResponse = await fetchWithRetry(`${JSONBIN_API_URL}/${TRANSACTIONS_BIN_ID}/latest`, {
                     headers: { 'X-Master-Key': JSONBIN_MASTER_KEY }
                 });
                 showStatus('Parsing transactions data');
@@ -361,17 +398,18 @@
                     });
                     showStatus('Transactions bin initialized');
                 }
-                const userTransactions = transactions.filter(t => t.user_id === userId);
+                const userTransactions = transactions.filter(t => t.email === email);
                 if (userTransactions.length > 0) {
                     document.getElementById('transactions').textContent = userTransactions
                         .map(t => `${t.type} ${t.stock_symbol}: ${t.quantity} shares @ $${t.price.toFixed(2)} on ${new Date(t.timestamp).toLocaleString()}`)
                         .join('\n');
                 }
+                toggleCardLoading('transactionsCard', false);
 
-                // Fetch leaderboard
+                // Fetch and update leaderboard
                 showStatus('Starting leaderboard fetch');
                 try {
-                    const leaderboardResponse = await fetchWithRetry(`${JSONBIN_API_URL}/${LEADERBOARD_BIN_ID}`, {
+                    const leaderboardResponse = await fetchWithRetry(`${JSONBIN_API_URL}/${LEADERBOARD_BIN_ID}/latest`, {
                         headers: { 'X-Master-Key': JSONBIN_MASTER_KEY }
                     });
                     showStatus('Parsing leaderboard data');
@@ -390,33 +428,40 @@
                         });
                         showStatus('Leaderboard bin initialized');
                     }
-                    
-                    if (leaderboardItems.length === 0) {
-                        showStatus('Generating leaderboard');
-                        const leaderboard = [{
-                            user_id: userId,
-                            email: email,
+
+                    // Update or add user to leaderboard
+                    let userLeaderboardEntry = leaderboardItems.find(entry => entry.email === email);
+                    if (!userLeaderboardEntry) {
+                        showStatus('Adding user to leaderboard');
+                        userLeaderboardEntry = {
+                            email,
                             portfolio_value: userData.virtual_balance
-                        }];
-                        await fetchWithRetry(`${JSONBIN_API_URL}/${LEADERBOARD_BIN_ID}`, {
-                            method: 'PUT',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'X-Master-Key': JSONBIN_MASTER_KEY
-                            },
-                            body: JSON.stringify(leaderboard)
-                        });
-                        leaderboardItems = leaderboard;
-                        showStatus('Leaderboard generated');
+                        };
+                        leaderboardItems.push(userLeaderboardEntry);
+                    } else {
+                        showStatus('Updating user in leaderboard');
+                        userLeaderboardEntry.portfolio_value = userData.virtual_balance;
                     }
+                    // Sort leaderboard by portfolio value
+                    leaderboardItems.sort((a, b) => b.portfolio_value - a.portfolio_value);
+                    await fetchWithRetry(`${JSONBIN_API_URL}/${LEADERBOARD_BIN_ID}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Master-Key': JSONBIN_MASTER_KEY
+                        },
+                        body: JSON.stringify(leaderboardItems)
+                    });
+                    showStatus('Leaderboard updated');
                     
                     document.getElementById('leaderboard').textContent = leaderboardItems
                         .map((entry, index) => `${index + 1}. ${entry.email}: $${entry.portfolio_value.toFixed(2)}`)
                         .join('\n');
                 } catch (error) {
-                    document.getElementById('leaderboard').textContent = `1. ${email}: $${userData.virtual_balance.toFixed(2)}`;
                     showStatus(`Leaderboard error: ${error.message}, showing basic data`);
+                    document.getElementById('leaderboard').textContent = `1. ${email}: $${userData.virtual_balance.toFixed(2)}`;
                 }
+                toggleCardLoading('leaderboardCard', false);
 
                 showStatus('Dashboard loaded successfully');
             } catch (error) {
@@ -427,8 +472,6 @@
                 showStatus('UI updated');
             }
         });
-
-      
     </script>
 </body>
 </html>
