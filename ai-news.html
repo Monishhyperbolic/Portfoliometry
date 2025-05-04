@@ -110,8 +110,8 @@
 
     /* Notification Styles */
     .notification {
-      position: fixed;
-      bottom: 20px;
+      position: relative;
+      top: 10px; /* Adjusts the position of the notification below the navbar */
       left: 50%;
       transform: translateX(-50%);
       background-color: #00ff88;
@@ -228,88 +228,4 @@
         console.log('Marketaux API response:', data);
 
         if (!response.ok) {
-          throw new Error(`Failed to fetch news data: ${response.status} ${response.statusText}`);
-        }
-
-        const newsList = document.getElementById("news-list");
-        newsList.innerHTML = "";
-
-        if (!data.data || data.data.length === 0) {
-          newsList.innerHTML = "No news articles found for the past 7 days.";
-          return;
-        }
-
-        data.data.forEach(item => {
-          const card = document.createElement("div");
-          card.className = "news-card";
-          card.innerHTML = `
-            <h3>${item.title}</h3>
-            <small>${item.published_at.split("T")[0]}</small>
-          `;
-          card.onclick = () => analyzeNews(item.description || item.title);
-          newsList.appendChild(card);
-        });
-      } catch (error) {
-        console.error('Fetch news error:', error);
-        document.getElementById("news-list").innerHTML = `Error fetching news: ${error.message}`;
-      }
-    }
-
-    async function analyzeNews(text) {
-      const prompt = `
-You are a financial AI analyst. Analyze the following news in terms of:
-- Sentiment (bullish, bearish, neutral)
-- Market sector relevance
-- Potential market or stock impact
-- Include any recently released financial data (CPI, jobs report, GDP, earnings, etc) if relevant
-
-News:
-"${text}"
-`;
-
-      document.getElementById("result").textContent = "Analyzing with Groq...";
-
-      try {
-        const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${GROQ_API_KEY}`
-          },
-          body: JSON.stringify({
-            model: "llama3-70b-8192",
-            messages: [{ role: "user", content: prompt }],
-            temperature: 0.5
-          })
-        });
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error('Groq API error:', {
-            status: response.status,
-            statusText: response.statusText,
-            body: errorText
-          });
-          throw new Error(`Groq API error: ${response.status} ${response.statusText}`);
-        }
-
-        const result = await response.json();
-        const reply = result?.choices?.[0]?.message?.content || "No response.";
-        document.getElementById("result").textContent = reply;
-      } catch (error) {
-        console.error('Analyze news error:', error);
-        let errorMessage = "Error analyzing news: " + error.message;
-        if (error.message.includes("404")) {
-          errorMessage += " - Verify the endpoint in Groq documentation (https://console.groq.com/docs) or contact Groq support.";
-        } else if (error.message.includes("401")) {
-          errorMessage += " - Invalid or expired API key. Verify your GROQ_API_KEY at https://console.groq.com.";
-        }
-        document.getElementById("result").textContent = errorMessage;
-      }
-    }
-
-    // Initialize news fetching
-    document.addEventListener("DOMContentLoaded", fetchNews);
-  </script>
-</body>
-</html>
+          throw new Error(`Failed to fetch news data: ${response.status} ${response.status
