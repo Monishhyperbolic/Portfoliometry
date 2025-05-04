@@ -442,11 +442,21 @@
             let debounceTimeout;
             const priceCache = new Map(); // Cache for stock prices
 
+            // Default stocks to load on init
+            const defaultStocks = ['AAPL', 'MSFT', 'TSLA', 'GOOGL', 'AMZN', 'NVDA', 'META', 'JPM', 'V', 'WMT'];
+
             // Mock data fallback (used only if API fails)
             const mockStocks = [
                 { symbol: 'AAPL', name: 'Apple Inc.', price: 205.35, description: 'Technology company' },
                 { symbol: 'MSFT', name: 'Microsoft Corporation', price: 386.91, description: 'Software company' },
-                { symbol: 'TSLA', name: 'Tesla, Inc.', price: 276.55, description: 'Electric vehicles' }
+                { symbol: 'TSLA', name: 'Tesla, Inc.', price: 276.55, description: 'Electric vehicles' },
+                { symbol: 'GOOGL', name: 'Alphabet Inc.', price: 135.72, description: 'Technology company' },
+                { symbol: 'AMZN', name: 'Amazon.com, Inc.', price: 179.54, description: 'E-commerce company' },
+                { symbol: 'NVDA', name: 'NVIDIA Corporation', price: 121.44, description: 'Semiconductor company' },
+                { symbol: 'META', name: 'Meta Platforms, Inc.', price: 374.49, description: 'Social media company' },
+                { symbol: 'JPM', name: 'JPMorgan Chase & Co.', price: 170.30, description: 'Financial services' },
+                { symbol: 'V', name: 'Visa Inc.', price: 260.35, description: 'Payment processing' },
+                { symbol: 'WMT', name: 'Walmart Inc.', price: 157.65, description: 'Retail company' }
             ];
 
             // Load stocks from localStorage
@@ -456,6 +466,7 @@
                     if (storedStocks) {
                         stocks = JSON.parse(storedStocks);
                         filteredStocks = [...stocks];
+                        console.log('Loaded stocks from localStorage:', stocks.length);
                         updateStockList();
                         updateTradeSymbolOptions();
                     }
@@ -468,6 +479,7 @@
             function saveStocksToStorage() {
                 try {
                     localStorage.setItem('tradeDaddyStocks', JSON.stringify(stocks));
+                    console.log('Saved stocks to localStorage:', stocks.length);
                 } catch (error) {
                     console.error('Failed to save stocks to localStorage:', error);
                 }
@@ -490,7 +502,31 @@
                         
                         userEmail = user.email || 'User';
                         elements.userEmail.textContent = userEmail;
+
+                        // Load default stocks
+                        elements.stockListLoading.style.display = 'block';
+                        for (const symbol of defaultStocks) {
+                            try {
+                                if (!stocks.find(s => s.symbol === symbol)) {
+                                    const stock = await fetchStockPrice(symbol);
+                                    stocks.push(stock);
+                                }
+                            } catch (error) {
+                                console.error(`Failed to load default stock ${symbol}:`, error);
+                            }
+                        }
+                        elements.stockListLoading.style.display = 'none';
+
+                        // Load stored stocks
                         loadStocksFromStorage();
+
+                        // Update UI
+                        filteredStocks = [...stocks];
+                        console.log('Initial stocks:', stocks.length);
+                        updateStockList();
+                        updateTradeSymbolOptions();
+                        saveStocksToStorage();
+
                         setupTradeForm();
                         startPriceUpdates();
                     } else {
@@ -580,7 +616,6 @@
                     return priceCache.get(symbol);
                 }
                 try {
-                    elements.stockListLoading.style.display = 'block';
                     const response = await axios.get(`${API_NINJAS_URL}${symbol}`, {
                         headers: { 'X-Api-Key': API_NINJAS_KEY }
                     });
@@ -604,8 +639,6 @@
                         return mock;
                     }
                     throw new Error(`Failed to fetch price for ${symbol}`);
-                } finally {
-                    elements.stockListLoading.style.display = 'none';
                 }
             }
 
@@ -616,6 +649,7 @@
                     currentPage = 1;
                     updateStockList();
                     updateTradeSymbolOptions();
+                    console.log('Search cleared, stocks:', stocks.length);
                     return;
                 }
                 try {
@@ -634,6 +668,7 @@
                     currentPage = 1;
                     updateStockList();
                     updateTradeSymbolOptions();
+                    console.log('Search completed, stocks:', stocks.length);
                 } catch (error) {
                     console.error('Search error:', error);
                     showError(`No stock found for "${query}". Check ad blockers or try another ticker.`);
@@ -663,12 +698,15 @@
 
                 elements.prevPage.disabled = currentPage === 1;
                 elements.nextPage.disabled = end >= filteredStocks.length;
+                console.log('Stock list updated, displaying:', paginatedStocks.length);
             }
 
             // Update Trade Symbol Options
             function updateTradeSymbolOptions() {
-                elements.tradeSymbol.innerHTML = '<option value="">Select a stock</option>' +
+                const options = '<option value="">Select a stock</option>' +
                     stocks.map(stock => `<option value="${stock.symbol}">${stock.symbol} - ${stock.name}</option>`).join('');
+                elements.tradeSymbol.innerHTML = options;
+                console.log('Dropdown updated, options:', stocks.length);
             }
 
             // Initiate Buy from Stock List
@@ -682,6 +720,7 @@
                 validateTradeForm();
                 // Scroll to trade form
                 elements.tradeForm.scrollIntoView({ behavior: 'smooth' });
+                console.log('Initiated buy for:', symbol);
             }
 
             // Setup Trade Form
@@ -723,6 +762,7 @@
                         updateTradeSymbolOptions();
                         saveStocksToStorage();
                         elements.status.textContent = 'Prices refreshed';
+                        console.log('Prices refreshed, stocks:', stocks.length);
                     } catch (error) {
                         console.error('Refresh prices error:', error);
                         showError('Failed to refresh prices. Check ad blockers or try again.');
@@ -858,6 +898,7 @@
                         updateStockList();
                         updateTradeSymbolOptions();
                         saveStocksToStorage();
+                        console.log('Price update completed, stocks:', stocks.length);
                     } catch (error) {
                         console.error('Price update error:', error);
                         showError('Failed to update prices. Check ad blockers or try again.');
