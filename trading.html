@@ -84,7 +84,6 @@
             cursor: pointer;
             text-decoration: none;
             transition: background 0.3s, transform 0.2s;
-            margin-top: 1rem;
         }
         .btn:hover {
             background: #00cc6f;
@@ -94,6 +93,10 @@
             background: #555;
             cursor: not-allowed;
             transform: none;
+        }
+        .btn-small {
+            padding: 0.5rem 1rem;
+            font-size: 0.9rem;
         }
         .error {
             color: #ff5555;
@@ -153,6 +156,9 @@
         }
         .stock-item span {
             color: #ccc;
+        }
+        .stock-item .btn {
+            margin-left: 1rem;
         }
         .pagination {
             display: flex;
@@ -229,6 +235,10 @@
                 align-items: flex-start;
                 gap: 0.5rem;
             }
+            .stock-item .btn {
+                margin-left: 0;
+                margin-top: 0.5rem;
+            }
             .search-container {
                 flex-direction: column;
             }
@@ -290,7 +300,7 @@
         <div class="error" id="error" style="display: none;">An error occurred</div>
         <div id="loading" class="loading">Loading trading data...</div>
         <div class="search-container">
-            <input type="text" id="searchInput" placeholder="Search stocks (e.g., AAPL, Apple)">
+            <input type="text" id="searchInput" placeholder="Search stocks (e.g., AAPL)">
             <button id="refreshPricesBtn" class="btn">Refresh Prices</button>
         </div>
         <div class="grid">
@@ -315,8 +325,8 @@
                     <div>
                         <label for="tradeType">Trade Type</label>
                         <select id="tradeType">
-                            <option value="buy">Buy</option>
-                            <option value="sell">Sell</option>
+                            <option value="BUY">Buy</option>
+                            <option value="SELL">Sell</option>
                         </select>
                     </div>
                     <div>
@@ -431,12 +441,6 @@
                 { symbol: 'TSLA', name: 'Tesla, Inc.', price: 276.55, description: 'Electric vehicles' }
             ];
 
-            // Predefined stock symbols (for initial load)
-            const stockSymbols = [
-                'AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA', 'NVDA', 'META', 'JPM', 'V', 'WMT',
-                'PG', 'DIS', 'NFLX', 'KO', 'PEP', 'CSCO', 'INTC', 'AMD', 'IBM', 'ORCL'
-            ];
-
             // Initialize App
             async function init() {
                 try {
@@ -454,7 +458,6 @@
                         
                         userEmail = user.email || 'User';
                         elements.userEmail.textContent = userEmail;
-                        await loadStocks();
                         setupTradeForm();
                         startPriceUpdates();
                     } else {
@@ -593,7 +596,7 @@
                         stock = await fetchStockPrice(symbol);
                         stocks.push(stock);
                     }
-                    filteredStocks = [stock];
+                    filteredStocks = stocks.filter(s => s.symbol.includes(symbol) || s.name.toUpperCase().includes(symbol));
                     currentPage = 1;
                     updateStockList();
                     updateTradeSymbolOptions();
@@ -607,28 +610,6 @@
                 }
             }
 
-            // Load Stocks
-            async function loadStocks() {
-                try {
-                    elements.loading.style.display = 'block';
-                    stocks = await Promise.all(stockSymbols.map(async symbol => {
-                        return await fetchStockPrice(symbol);
-                    }));
-                    filteredStocks = [...stocks];
-                    updateStockList();
-                    updateTradeSymbolOptions();
-                } catch (error) {
-                    console.error('Load stocks error:', error);
-                    showError('Failed to load stocks. Using mock data.');
-                    stocks = mockStocks;
-                    filteredStocks = [...stocks];
-                    updateStockList();
-                    updateTradeSymbolOptions();
-                } finally {
-                    elements.loading.style.display = 'none';
-                }
-            }
-
             // Update Stock List
             function updateStockList() {
                 const start = (currentPage - 1) * stocksPerPage;
@@ -638,7 +619,10 @@
                 elements.stockList.innerHTML = paginatedStocks.map(stock => `
                     <div class="stock-item">
                         <span>${stock.symbol} - ${stock.name}</span>
-                        <span>$${stock.price.toFixed(2)}</span>
+                        <div>
+                            <span>$${stock.price.toFixed(2)}</span>
+                            <button class="btn btn-small" onclick="initiateBuy('${stock.symbol}')">Buy</button>
+                        </div>
                     </div>
                 `).join('');
 
@@ -652,8 +636,22 @@
                     stocks.map(stock => `<option value="${stock.symbol}">${stock.symbol} - ${stock.name}</option>`).join('');
             }
 
+            // Initiate Buy from Stock List
+            function initiateBuy(symbol) {
+                elements.tradeSymbol.value = symbol;
+                elements.tradeType.value = 'BUY';
+                elements.orderType.value = 'market';
+                elements.limitPriceContainer.style.display = 'none';
+                elements.quantity.value = '';
+                elements.quantity.focus();
+                validateTradeForm();
+                // Scroll to trade form
+                elements.tradeForm.scrollIntoView({ behavior: 'smooth' });
+            }
+
             // Setup Trade Form
             function setupTradeForm() {
+                elements.tradeForm = document.querySelector('.trade-form');
                 elements.orderType.addEventListener('change', () => {
                     elements.limitPriceContainer.style.display = elements.orderType.value === 'limit' ? 'block' : 'none';
                     validateTradeForm();
@@ -678,7 +676,19 @@
 
                 elements.refreshPricesBtn.addEventListener('click', async () => {
                     priceCache.clear(); // Clear cache to force refresh
-                    await loadStocks();
+                    stocks.forEach(async stock => {
+                        try {
+                            const updatedStock = await fetchStockPrice(stock.symbol);
+                            stock.price = updatedStock.price;
+                            stock.name = updatedStock.name;
+                            stock.description = updatedStock.description;
+                        } catch (error) {
+                            console.error(`Refresh price for ${stock.symbol}:`, error);
+                        }
+                    });
+                    filteredStocks = [...stocks];
+                    updateStockList();
+                    updateTradeSymbolOptions();
                     elements.status.textContent = 'Prices refreshed';
                 });
             }
@@ -709,7 +719,7 @@
                 const totalCost = quantity * price;
 
                 elements.tradeConfirmation.innerHTML = `
-                    ${tradeType.toUpperCase()} ${quantity} shares of ${symbol}<br>
+                    ${tradeType} ${quantity} shares of ${symbol}<br>
                     ${orderType === 'market' ? 'at market price' : `at $${price.toFixed(2)} (limit)`}<br>
                     Total Cost: $${totalCost.toFixed(2)}
                 `;
@@ -740,19 +750,19 @@
                     const holdings = portfolio.holdings || {};
                     const currentQuantity = holdings[symbol]?.quantity || 0;
                     const currentAveragePrice = holdings[symbol]?.averagePrice || 0;
-                    const newQuantity = tradeType === 'buy'
+                    const newQuantity = tradeType === 'BUY'
                         ? currentQuantity + quantity
                         : currentQuantity - quantity;
-                    const newAveragePrice = tradeType === 'buy'
+                    const newAveragePrice = tradeType === 'BUY'
                         ? ((currentAveragePrice * currentQuantity) + (price * quantity)) / (currentQuantity + quantity || 1)
                         : currentAveragePrice;
 
-                    const newBalance = tradeType === 'buy'
+                    const newBalance = tradeType === 'BUY'
                         ? portfolio.balance - totalCost
                         : portfolio.balance + totalCost;
 
-                    if (tradeType === 'buy' && newBalance < 0) throw new Error('Insufficient balance');
-                    if (tradeType === 'sell' && newQuantity < 0) throw new Error('Cannot sell more shares than owned');
+                    if (tradeType === 'BUY' && newBalance < 0) throw new Error('Insufficient balance');
+                    if (tradeType === 'SELL' && newQuantity < 0) throw new Error('Cannot sell more shares than owned');
 
                     // Record transaction
                     const { error: txError } = await supabaseClient
@@ -800,7 +810,19 @@
             function startPriceUpdates() {
                 setInterval(async () => {
                     priceCache.clear(); // Clear cache to ensure fresh prices
-                    await loadStocks();
+                    stocks.forEach(async stock => {
+                        try {
+                            const updatedStock = await fetchStockPrice(stock.symbol);
+                            stock.price = updatedStock.price;
+                            stock.name = updatedStock.name;
+                            stock.description = updatedStock.description;
+                        } catch (error) {
+                            console.error(`Refresh price for ${stock.symbol}:`, error);
+                        }
+                    });
+                    filteredStocks = [...stocks];
+                    updateStockList();
+                    updateTradeSymbolOptions();
                 }, 120000); // Update every 120 seconds
             }
 
@@ -846,12 +868,15 @@
                 }, 300);
             });
 
+            // Expose initiateBuy to global scope for onclick
+            window.initiateBuy = initiateBuy;
+
             // Start initialization
             init();
         });
 
         /*
-        Supabase Table Schemas (for reference, updated for total_amount):
+        Supabase Table Schemas (for reference, updated for type constraint):
 
         create table portfolio (
             email text primary key,
@@ -863,7 +888,7 @@
         create table transactions (
             id serial primary key,
             email text references portfolio(email),
-            type text,
+            type text check (type in ('BUY', 'SELL')),
             symbol text,
             quantity numeric,
             price numeric,
