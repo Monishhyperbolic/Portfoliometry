@@ -100,7 +100,7 @@
 
     async function fetchHoldingsMeta(userId) {
       const { data, error } = await supabase
-        .from("holdings")
+        .from("portfolio")
         .select("balance, holdings")
         .eq("user_id", userId)
         .single();
