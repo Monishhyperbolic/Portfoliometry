@@ -1,176 +1,242 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trade Daddy - AI News Analysis</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Inter', sans-serif;
-        }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Trade Daddy - AI News Analysis</title>
+  <style>
+    * {
+      margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif;
+    }
 
-        body {
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-            min-height: 100vh;
-            color: #fff;
-        }
+    body {
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      min-height: 100vh; color: #fff;
+    }
 
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 2rem;
-        }
+    .container {
+      max-width: 1200px; margin: 0 auto; padding: 2rem;
+    }
 
-        .section {
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(10px);
-            border-radius: 16px;
-            padding: 1.5rem;
-            margin-bottom: 2rem;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
+    .section {
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(10px);
+      border-radius: 16px;
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
 
-        .section h2 {
-            font-size: 1.5rem;
-            font-weight: 700;
-            margin-bottom: 1rem;
-            color: #00ff88;
-        }
+    .section h2 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      color: #00ff88;
+    }
 
-        .section p {
-            color: #ccc;
-            font-size: 1rem;
-        }
+    .news-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1rem;
+    }
 
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 1.5rem;
-        }
+    .news-card {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 1rem;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background 0.3s, box-shadow 0.3s;
+    }
 
-        .card {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 8px;
-            padding: 1rem;
-            text-align: center;
-        }
+    .news-card:hover {
+      background: rgba(0, 255, 136, 0.2);
+      box-shadow: 0 0 15px rgba(0, 255, 136, 0.3);
+    }
 
-        .card h3 {
-            font-size: 1.2rem;
-            margin-bottom: 0.5rem;
-        }
+    .news-card h3 {
+      font-size: 1.1rem;
+      color: #fff;
+      text-shadow: 0 0 5px rgba(0, 255, 136, 0.5);
+      animation: glow 2s ease-in-out infinite;
+    }
 
-        .card p {
-            color: #ccc;
-        }
+    @keyframes glow {
+      0%, 100% {
+        text-shadow: 0 0 5px rgba(0, 255, 136, 0.5), 0 0 10px rgba(0, 255, 136, 0.3);
+      }
+      50% {
+        text-shadow: 0 0 10px rgba(0, 255, 136, 0.7), 0 0 15px rgba(0, 255, 136, 0.5);
+      }
+    }
 
-        .btn {
-            padding: 0.75rem 1.5rem;
-            border: none;
-            border-radius: 8px;
-            background: #00ff88;
-            color: #1a1a2e;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background 0.3s, transform 0.2s;
-            display: inline-block;
-            text-decoration: none;
-        }
+    .news-card small {
+      color: #aaa;
+    }
 
-        .btn:hover {
-            background: #00cc6f;
-            transform: translateY(-2px);
-        }
+    .analysis-box {
+      margin-top: 1.5rem;
+      padding: 1rem;
+      background: rgba(0, 0, 0, 0.5);
+      border-radius: 8px;
+      white-space: pre-wrap;
+      min-height: 100px;
+    }
 
-        iframe {
-            border: none;
-            width: 100%;
-        }
+    .btn {
+      margin-top: 1rem;
+      padding: 0.75rem 1.5rem;
+      border: none;
+      border-radius: 8px;
+      background: #00ff88;
+      color: #1a1a2e;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.3s, transform 0.2s;
+      text-decoration: none;
+      display: inline-block;
+    }
 
-        @media (max-width: 768px) {
-            .container {
-                padding: 1rem;
-            }
+    .btn:hover {
+      background: #00cc6f;
+      transform: translateY(-2px);
+    }
 
-            .section h2 {
-                font-size: 1.25rem;
-            }
-        }
-    </style>
+    iframe {
+      border: none;
+      width: 100%;
+    }
+  </style>
 </head>
 <body>
-    <!-- Navbar -->
-    <iframe src="navbar.html" height="80px"></iframe>
+    <nav style="background: rgba(255, 255, 255, 0.05); padding: 1rem; text-align: center;">
+        <a href="/" style="color: #00ff88; text-decoration: none; margin: 0 1rem;">Home</a>
+        <a href="/dashboard.html" style="color: #00ff88; text-decoration: none; margin: 0 1rem;">Dashboard</a>
+        <a href="/trading.html" style="color: #00ff88; text-decoration: none; margin: 0 1rem;">Trading Terminal</a>
+        <a href="/ai-portfolio.html" style="color: #00ff88; text-decoration: none; margin: 0 1rem;">AI Portfolio analyser</a>
+        <a href="/ai-news.html" style="color: #00ff88; text-decoration: none; margin: 0 1rem;">AI News analyser</a>
+        <button id="logoutBtn" style="background: none; border: none; color: #ff5555; cursor: pointer; font-size: 1rem; display: none;">Logout</button>
+    </nav>
 
-    <div class="container">
-        <div class="section">
-            <h2>AI News Analysis</h2>
-            <p>Stay ahead with AI-powered insights from market news. Our advanced algorithms analyze financial news to provide real-time sentiment analysis and stock alerts.</p>
-        </div>
-
-        <div class="section">
-            <h2>Market Sentiment</h2>
-            <div class="grid">
-                <div class="card">
-                    <h3>Bullish Trends</h3>
-                    <p>AI-detected positive sentiment for tech stocks.</p>
-                </div>
-                <div class="card">
-                    <h3>Bearish Alerts</h3>
-                    <p>Negative sentiment detected for energy sector.</p>
-                </div>
-            </div>
-        </div>
-
-        <div class="section">
-            <h2>Stock Alerts</h2>
-            <div class="grid">
-                <div class="card">
-                    <h3>AAPL Watchlist</h3>
-                    <p>AI recommends monitoring Apple due to recent news.</p>
-                </div>
-                <div class="card">
-                    <h3>TSLA Volatility</h3>
-                    <p>High volatility detected in Tesla stock.</p>
-                </div>
-            </div>
-            <a href="#subscribe" class="btn">Subscribe for Real-Time Alerts</a>
-        </div>
+  <!-- Navbar -->
+  <div class="container">
+    <div class="section">
+      <h2>🧠 AI News Analysis (Past 7 Days)</h2>
+      <p>Click any financial news headline to analyze it using Groq LLaMA3 for sentiment, sector relevance, and real-world market context.</p>
     </div>
 
-    <!-- Footer -->
-    <iframe src="footer.html" height="200px"></iframe>
+    <div class="section">
+      <div id="news-list" class="news-grid">Loading news...</div>
+      <div id="result" class="analysis-box">Analysis will appear here.</div>
+    </div>
+  </div>
 
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth.js"></script>
-    <script>
-        // Firebase Configuration
-        const firebaseConfig = {
-            apiKey: "AIzaSyCobm0izsCAXX_vrNOW2drnRstjqbrs6aU",
-            authDomain: "tradedaddy-45936.firebaseapp.com",
-            projectId: "tradedaddy-45936",
-            storageBucket: "tradedaddy-45936.firebasestorage.app",
-            messagingSenderId: "506023691851",
-            appId: "1:506023691851:web:0f550e65baccbbeabb2fce",
-            measurementId: "G-F0LPJQHZPW"
-        };
+  <!-- Footer -->
+  <footer style="background: rgba(255, 255, 255, 0.05); padding: 1rem; text-align: center; color: #ccc;">
+    <p>© 2025 Trade Daddy. All rights reserved.</p>
+</footer>
+  <!-- JavaScript: Marketaux + Groq Integration -->
+  <script>
+    const MARKETAUX_API_KEY = "sRmpCTusPNM4EeC3aUzzgFYCGejrtIB6DKQnaQmV";
+    const GROQ_API_KEY = "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";
 
-        // Initialize Firebase
-        firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
+    async function fetchNews() {
+      const today = new Date();
+      const oneWeekAgo = new Date();
+      oneWeekAgo.setDate(today.getDate() - 7);
+      const fromDate = oneWeekAgo.toISOString().split("T")[0];
 
-        // Redirect to login if not authenticated
-        auth.onAuthStateChanged((user) => {
-            if (!user) {
-                window.location.href = 'index.html';
-            }
+      const url = `https://api.marketaux.com/v1/news/all?language=en&filter_entities=true&published_after=${fromDate}&topics=finance,stock_market,economy,data&api_token=${MARKETAUX_API_KEY}&limit=20`;
+
+      try {
+        const response = await fetch(url);
+        const data = await response.json();
+        console.log('Marketaux API response:', data);
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch news data: ${response.status} ${response.statusText}`);
+        }
+
+        const newsList = document.getElementById("news-list");
+        newsList.innerHTML = "";
+
+        if (!data.data || data.data.length === 0) {
+          newsList.innerHTML = "No news articles found for the past 7 days.";
+          return;
+        }
+
+        data.data.forEach(item => {
+          const card = document.createElement("div");
+          card.className = "news-card";
+          card.innerHTML = `
+            <h3>${item.title}</h3>
+            <small>${item.published_at.split("T")[0]}</small>
+          `;
+          card.onclick = () => analyzeNews(item.description || item.title);
+          newsList.appendChild(card);
         });
-    </script>
+      } catch (error) {
+        console.error('Fetch news error:', error);
+        document.getElementById("news-list").innerHTML = `Error fetching news: ${error.message}`;
+      }
+    }
+
+    async function analyzeNews(text) {
+      const prompt = `
+You are a financial AI analyst. Analyze the following news in terms of:
+- Sentiment (bullish, bearish, neutral)
+- Market sector relevance
+- Potential market or stock impact
+- Include any recently released financial data (CPI, jobs report, GDP, earnings, etc) if relevant
+
+News:
+"${text}"
+`;
+
+      document.getElementById("result").textContent = "Analyzing with Groq...";
+
+      try {
+        const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${GROQ_API_KEY}`
+          },
+          body: JSON.stringify({
+            model: "llama3-70b-8192",
+            messages: [{ role: "user", content: prompt }],
+            temperature: 0.5
+          })
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('Groq API error:', {
+            status: response.status,
+            statusText: response.statusText,
+            body: errorText
+          });
+          throw new Error(`Groq API error: ${response.status} ${response.statusText}`);
+        }
+
+        const result = await response.json();
+        const reply = result?.choices?.[0]?.message?.content || "No response.";
+        document.getElementById("result").textContent = reply;
+      } catch (error) {
+        console.error('Analyze news error:', error);
+        let errorMessage = "Error analyzing news: " + error.message;
+        if (error.message.includes("404")) {
+          errorMessage += " - Verify the endpoint in Groq documentation (https://console.groq.com/docs) or contact Groq support.";
+        } else if (error.message.includes("401")) {
+          errorMessage += " - Invalid or expired API key. Verify your GROQ_API_KEY at https://console.groq.com.";
+        }
+        document.getElementById("result").textContent = errorMessage;
+      }
+    }
+
+    // Initialize news fetching
+    document.addEventListener("DOMContentLoaded", fetchNews);
+  </script>
 </body>
 </html>
