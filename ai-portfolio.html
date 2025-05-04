@@ -58,7 +58,7 @@
           <tr>
             <th>Ticker</th>
             <th>Quantity</th>
-            <th>Buy Price</th>
+            <th>Avg. Price</th>
             <th>Current Price</th>
             <th>Value</th>
             <th>Gain/Loss</th>
@@ -102,7 +102,7 @@
     const { createClient } = supabase;
     const SUPABASE_URL = "https://knzgscqehdmaoudbgdqy.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtuemdzY3FlaGRtYW91ZGJnZHF5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDYzNDM0MDQsImV4cCI6MjA2MTkxOTQwNH0.ca5ytJBtnNB8oVXqRvSqVXZqa_kBl35fbr9xhy59AYo";
-    const API_NINJAS_KEY = "biBDs49ms5elJgqvqeg0sA==8aDE9mcS13jkusVs"; // Replace with your API Ninjas key
+    const API_NINJAS_KEY = "YOUR_API_NINJAS_KEY"; // Replace with your API Ninjas key
     const GROQ_API_KEY = "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";
     const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -166,7 +166,7 @@
         let totalHoldingsValue = 0;
 
         await Promise.all(entries.map(async ([ticker, h]) => {
-          let currentPrice = h.buy_price || 0;
+          let currentPrice = h.averagePrice || 0;
           try {
             const response = await fetch(`https://api.api-ninjas.com/v1/stockprice?ticker=${ticker}`, {
               headers: { "X-Api-Key": API_NINJAS_KEY }
@@ -175,22 +175,22 @@
               throw new Error(`API Ninjas error: ${response.status} ${response.statusText}`);
             }
             const data = await response.json();
-            currentPrice = parseFloat(data.price) || h.buy_price || 0;
+            currentPrice = parseFloat(data.price) || h.averagePrice || 0;
           } catch (error) {
             console.error(`Error fetching price for ${ticker}:`, error);
           }
 
           const quantity = h.quantity || 0;
-          const buyPrice = h.buy_price || 0;
+          const averagePrice = h.averagePrice || 0;
           const value = quantity * currentPrice;
-          const gainLoss = (currentPrice - buyPrice) * quantity;
+          const gainLoss = (currentPrice - averagePrice) * quantity;
 
           totalHoldingsValue += value;
 
           updatedHoldings.push({
             ticker,
             quantity,
-            buy_price: buyPrice,
+            average_price: averagePrice,
             current_price: currentPrice,
             value,
             gain_loss: gainLoss
@@ -205,7 +205,7 @@
           row.innerHTML = `
             <td>${h.ticker}</td>
             <td>${h.quantity}</td>
-            <td>$${h.buy_price.toFixed(2)}</td>
+            <td>$${h.average_price.toFixed(2)}</td>
             <td>$${h.current_price.toFixed(2)}</td>
             <td>$${h.value.toFixed(2)}</td>
             <td class="${h.gain_loss >= 0 ? 'positive' : 'negative'}">$${h.gain_loss.toFixed(2)}</td>
@@ -228,15 +228,22 @@
       }
     }
 
+    function cleanResponse(reply) {
+      // Strip ```json and ``` from response
+      const jsonMatch = reply.match(/```json\s*([\s\S]*?)\s*```/) || reply.match(/{[\s\S]*}/);
+      if (jsonMatch) {
+        return jsonMatch[1] || jsonMatch[0];
+      }
+      return reply;
+    }
+
     async function analyzePortfolio(holdings, balance, totalHoldingsValue) {
       const totalAccountValue = balance + totalHoldingsValue;
       const prompt = `
 You are a financial AI analyst powered by Grok. Analyze the following portfolio and account summary:
 
 **Portfolio Holdings:**
-\`\`\`json
 ${JSON.stringify(holdings, null, 2)}
-\`\`\`
 
 **Account Summary:**
 - Cash Balance: $${balance.toFixed(2)}
@@ -249,15 +256,13 @@ Provide a structured response with detailed, actionable insights:
 - **Expected Returns**: Estimate annualized return (e.g., 5-10%) based on historical trends, current prices, or market conditions. Justify with data or trends.
 - **Optimization Suggestions**: Recommend specific actions (e.g., buy/sell specific stocks, rebalance weights, use cash balance) to improve risk-adjusted returns. Consider the cash balance for new investments.
 
-Return the response in JSON format:
-\`\`\`json
+Return *only* valid JSON, without code fences, markdown, or extra text:
 {
   "portfolio_risk": {"level": "moderate", "explanation": "..."},
   "diversification": {"status": "moderately diversified", "suggestion": "..."},
   "expected_returns": {"estimate": "8%", "justification": "..."},
   "optimization": {"suggestions": "..."}
 }
-\`\`\`
 `;
 
       try {
@@ -286,12 +291,24 @@ Return the response in JSON format:
 
         const result = await response.json();
         const reply = result?.choices?.[0]?.message?.content || "{}";
+        console.log('Raw Groq response:', reply); // Debug log
+        const cleanedReply = cleanResponse(reply);
         let analysis;
         try {
-          analysis = JSON.parse(reply);
+          analysis = JSON.parse(cleanedReply);
         } catch (e) {
-          console.error('Failed to parse Groq response:', reply);
-          throw new Error("Invalid response format from Groq API");
+          console.error('Failed to parse cleaned Groq response:', cleanedReply);
+          // Fallback: Try extracting JSON-like content
+          const jsonMatch = cleanedReply.match(/{[\s\S]*}/);
+          if (jsonMatch) {
+            try {
+              analysis = JSON.parse(jsonMatch[0]);
+            } catch (fallbackError) {
+              throw new Error("Invalid response format from Groq API");
+            }
+          } else {
+            throw new Error("Invalid response format from Groq API");
+          }
         }
 
         document.getElementById("analysis-grid").innerHTML = `
@@ -314,13 +331,15 @@ Return the response in JSON format:
         `;
       } catch (error) {
         console.error('Analyze portfolio error:', error);
-        let errorMessage = "Failed to analyze portfolio: " + error.message;
+        let errorMessage = "Analysis unavailable: " + error.message;
         if (error.message.includes("404")) {
           errorMessage += " - Verify the endpoint in Groq documentation (https://console.groq.com/docs) or contact Groq support.";
         } else if (error.message.includes("401")) {
           errorMessage += " - Invalid or expired API key. Verify your GROQ_API_KEY at https://console.groq.com.";
         } else if (error.message.includes("429")) {
           errorMessage += " - Rate limit exceeded. Try again later or check your Groq plan.";
+        } else if (error.message.includes("Invalid response format")) {
+          errorMessage += " - Groq returned an invalid response. Check console logs for details.";
         }
         document.getElementById("analysis-grid").innerHTML = `
           <div class="card"><h3>Error</h3><p>${errorMessage}</p></div>
