@@ -6,7 +6,7 @@
     <title>Trade Daddy - Trading</title>
     <!-- Supabase JS Client (pinned version) -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-    <!-- Axios for scraping -->
+    <!-- Axios for API requests -->
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <style>
         * {
@@ -332,7 +332,7 @@
                     </div>
                     <div>
                         <label for="quantity">Quantity</label>
-                        <input type="number"ايتم id="quantity" min="1" placeholder="Enter quantity">
+                        <input type="number" id="quantity" min="1" placeholder="Enter quantity">
                     </div>
                     <button id="placeTradeBtn" class="btn" disabled>Place Trade</button>
                 </div>
@@ -411,9 +411,9 @@
             const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
             console.log('Supabase initialized:', !!supabaseClient);
 
-            // CORS Proxy (use a reliable proxy or host your own)
-            const CORS_PROXY = 'https://cors-anywhere.herokuapp.com/';
-            const YAHOO_FINANCE_BASE = 'https://finance.yahoo.com/quote/';
+            // API Ninjas Configuration
+            const API_NINJAS_KEY = 'biBDs49ms5elJgqvqeg0sA==8aDE9mcS13jkusVs';
+            const API_NINJAS_URL = 'https://api.api-ninjas.com/v1/stockprice?ticker=';
 
             // State
             let stocks = [];
@@ -424,9 +424,9 @@
             let debounceTimeout;
             const priceCache = new Map(); // Cache for stock prices
 
-            // Mock data fallback (used only if scraping fails)
+            // Mock data fallback (used only if API fails)
             const mockStocks = [
-                { symbol: 'AAPL', name: 'Apple Inc.', price: 213.32, description: 'Technology company' },
+                { symbol: 'AAPL', name: 'Apple Inc.', price: 205.35, description: 'Technology company' },
                 { symbol: 'MSFT', name: 'Microsoft Corporation', price: 386.91, description: 'Software company' },
                 { symbol: 'TSLA', name: 'Tesla, Inc.', price: 276.55, description: 'Electric vehicles' }
             ];
@@ -538,31 +538,32 @@
                 }
             }
 
-            // Fetch Stock Price from Yahoo Finance
+            // Fetch Stock Price from API Ninjas
             async function fetchStockPrice(symbol) {
                 if (priceCache.has(symbol)) {
                     return priceCache.get(symbol);
                 }
                 try {
                     elements.stockListLoading.style.display = 'block';
-                    const url = `${CORS_PROXY}${YAHOO_FINANCE_BASE}${symbol}`;
-                    const response = await axios.get(url);
-                    const html = response.data;
-                    // Extract price (simplified; real implementation needs robust parsing)
-                    const priceMatch = html.match(/<fin-streamer[^>]+data-symbol="${symbol}"[^>]+value="([\d.]+)"/);
-                    const nameMatch = html.match(/<h1[^>]+>([^<]+)<\/h1>/);
-                    if (!priceMatch) throw new Error('Price not found');
-                    const price = parseFloat(priceMatch[1]);
-                    const name = nameMatch ? nameMatch[1].split(' (')[0] : symbol;
-                    const data = { price, name, description: 'Fetched from Yahoo Finance' };
-                    priceCache.set(symbol, data);
-                    return data;
+                    const response = await axios.get(`${API_NINJAS_URL}${symbol}`, {
+                        headers: { 'X-Api-Key': API_NINJAS_KEY }
+                    });
+                    const data = response.data;
+                    if (!data.ticker || !data.price) throw new Error('Invalid stock data');
+                    const stockData = {
+                        symbol: data.ticker,
+                        name: data.name || symbol,
+                        price: parseFloat(data.price),
+                        description: `Traded on ${data.exchange}`
+                    };
+                    priceCache.set(symbol, stockData);
+                    return stockData;
                 } catch (error) {
                     console.error(`Fetch price for ${symbol}:`, error);
                     // Fallback to mock data
                     const mock = mockStocks.find(s => s.symbol === symbol);
                     if (mock) {
-                        showError(`Using mock data for ${symbol} due to fetch failure`);
+                        showError(`Using mock data for ${symbol} due to API failure`);
                         priceCache.set(symbol, mock);
                         return mock;
                     }
@@ -588,9 +589,8 @@
                     if (stocks.find(s => s.symbol === symbol)) {
                         stock = stocks.find(s => s.symbol === symbol);
                     } else {
-                        // Attempt to fetch new stock
+                        // Fetch new stock
                         stock = await fetchStockPrice(symbol);
-                        stock.symbol = symbol;
                         stocks.push(stock);
                     }
                     filteredStocks = [stock];
@@ -612,8 +612,7 @@
                 try {
                     elements.loading.style.display = 'block';
                     stocks = await Promise.all(stockSymbols.map(async symbol => {
-                        const data = await fetchStockPrice(symbol);
-                        return { symbol, ...data };
+                        return await fetchStockPrice(symbol);
                     }));
                     filteredStocks = [...stocks];
                     updateStockList();
@@ -764,6 +763,7 @@
                             symbol,
                             quantity,
                             price,
+                            total_amount: totalCost,
                             order_type: orderType,
                             date: new Date().toISOString()
                         }]);
@@ -851,8 +851,8 @@
         });
 
         /*
-        Supabase Table Schemas (for reference):
-        
+        Supabase Table Schemas (for reference, updated for total_amount):
+
         create table portfolio (
             email text primary key,
             name text,
@@ -867,6 +867,7 @@
             symbol text,
             quantity numeric,
             price numeric,
+            total_amount numeric not null,
             order_type text,
             date timestamp default now()
         );
