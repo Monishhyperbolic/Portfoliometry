@@ -223,6 +223,12 @@
             margin-bottom: 1.5rem;
             color: #ccc;
         }
+        .empty-message {
+            text-align: center;
+            color: #ccc;
+            font-size: 1rem;
+            margin: 1rem 0;
+        }
         @media (max-width: 768px) {
             .container {
                 margin: 1rem;
@@ -307,6 +313,7 @@
             <div class="card">
                 <h2>Stock List</h2>
                 <div id="stockList" class="stock-list"></div>
+                <div class="empty-message" id="emptyStockMessage">Search for a ticker to view stocks</div>
                 <div class="pagination">
                     <button id="prevPage" disabled>Previous</button>
                     <button id="nextPage">Next</button>
@@ -396,6 +403,7 @@
                 searchInput: document.getElementById('searchInput'),
                 stockList: document.getElementById('stockList'),
                 stockListLoading: document.getElementById('stockListLoading'),
+                emptyStockMessage: document.getElementById('emptyStockMessage'),
                 prevPage: document.getElementById('prevPage'),
                 nextPage: document.getElementById('nextPage'),
                 tradeSymbol: document.getElementById('tradeSymbol'),
@@ -441,6 +449,30 @@
                 { symbol: 'TSLA', name: 'Tesla, Inc.', price: 276.55, description: 'Electric vehicles' }
             ];
 
+            // Load stocks from localStorage
+            function loadStocksFromStorage() {
+                try {
+                    const storedStocks = localStorage.getItem('tradeDaddyStocks');
+                    if (storedStocks) {
+                        stocks = JSON.parse(storedStocks);
+                        filteredStocks = [...stocks];
+                        updateStockList();
+                        updateTradeSymbolOptions();
+                    }
+                } catch (error) {
+                    console.error('Failed to load stocks from localStorage:', error);
+                }
+            }
+
+            // Save stocks to localStorage
+            function saveStocksToStorage() {
+                try {
+                    localStorage.setItem('tradeDaddyStocks', JSON.stringify(stocks));
+                } catch (error) {
+                    console.error('Failed to save stocks to localStorage:', error);
+                }
+            }
+
             // Initialize App
             async function init() {
                 try {
@@ -458,6 +490,7 @@
                         
                         userEmail = user.email || 'User';
                         elements.userEmail.textContent = userEmail;
+                        loadStocksFromStorage();
                         setupTradeForm();
                         startPriceUpdates();
                     } else {
@@ -566,7 +599,7 @@
                     // Fallback to mock data
                     const mock = mockStocks.find(s => s.symbol === symbol);
                     if (mock) {
-                        showError(`Using mock data for ${symbol} due to API failure`);
+                        showError(`Using mock data for ${symbol} due to API failure. Check ad blockers if this persists.`);
                         priceCache.set(symbol, mock);
                         return mock;
                     }
@@ -595,6 +628,7 @@
                         // Fetch new stock
                         stock = await fetchStockPrice(symbol);
                         stocks.push(stock);
+                        saveStocksToStorage();
                     }
                     filteredStocks = stocks.filter(s => s.symbol.includes(symbol) || s.name.toUpperCase().includes(symbol));
                     currentPage = 1;
@@ -602,7 +636,7 @@
                     updateTradeSymbolOptions();
                 } catch (error) {
                     console.error('Search error:', error);
-                    showError(`No stock found for "${query}"`);
+                    showError(`No stock found for "${query}". Check ad blockers or try another ticker.`);
                     filteredStocks = [];
                     updateStockList();
                 } finally {
@@ -612,6 +646,7 @@
 
             // Update Stock List
             function updateStockList() {
+                elements.emptyStockMessage.style.display = stocks.length === 0 ? 'block' : 'none';
                 const start = (currentPage - 1) * stocksPerPage;
                 const end = start + stocksPerPage;
                 const paginatedStocks = filteredStocks.slice(start, end);
@@ -676,20 +711,22 @@
 
                 elements.refreshPricesBtn.addEventListener('click', async () => {
                     priceCache.clear(); // Clear cache to force refresh
-                    stocks.forEach(async stock => {
-                        try {
+                    try {
+                        for (let stock of stocks) {
                             const updatedStock = await fetchStockPrice(stock.symbol);
                             stock.price = updatedStock.price;
                             stock.name = updatedStock.name;
                             stock.description = updatedStock.description;
-                        } catch (error) {
-                            console.error(`Refresh price for ${stock.symbol}:`, error);
                         }
-                    });
-                    filteredStocks = [...stocks];
-                    updateStockList();
-                    updateTradeSymbolOptions();
-                    elements.status.textContent = 'Prices refreshed';
+                        filteredStocks = [...stocks];
+                        updateStockList();
+                        updateTradeSymbolOptions();
+                        saveStocksToStorage();
+                        elements.status.textContent = 'Prices refreshed';
+                    } catch (error) {
+                        console.error('Refresh prices error:', error);
+                        showError('Failed to refresh prices. Check ad blockers or try again.');
+                    }
                 });
             }
 
@@ -800,7 +837,7 @@
                     validateTradeForm();
                 } catch (error) {
                     console.error('Place trade error:', error);
-                    showError(error.message || 'Failed to place trade.');
+                    showError(error.message || 'Failed to place trade. Check ad blockers or try again.');
                 } finally {
                     elements.tradeLoading.style.display = 'none';
                 }
@@ -810,19 +847,21 @@
             function startPriceUpdates() {
                 setInterval(async () => {
                     priceCache.clear(); // Clear cache to ensure fresh prices
-                    stocks.forEach(async stock => {
-                        try {
+                    try {
+                        for (let stock of stocks) {
                             const updatedStock = await fetchStockPrice(stock.symbol);
                             stock.price = updatedStock.price;
                             stock.name = updatedStock.name;
                             stock.description = updatedStock.description;
-                        } catch (error) {
-                            console.error(`Refresh price for ${stock.symbol}:`, error);
                         }
-                    });
-                    filteredStocks = [...stocks];
-                    updateStockList();
-                    updateTradeSymbolOptions();
+                        filteredStocks = [...stocks];
+                        updateStockList();
+                        updateTradeSymbolOptions();
+                        saveStocksToStorage();
+                    } catch (error) {
+                        console.error('Price update error:', error);
+                        showError('Failed to update prices. Check ad blockers or try again.');
+                    }
                 }, 120000); // Update every 120 seconds
             }
 
