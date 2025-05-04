@@ -1,334 +1,169 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trade Daddy - AI Portfolio Analysis</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Inter', sans-serif;
-        }
-
-        body {
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-            min-height: 100vh;
-            color: #fff;
-        }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 2rem;
-        }
-
-        .section {
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(10px);
-            border-radius: 16px;
-            padding: 1.5rem;
-            margin-bottom: 2rem;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .section h2 {
-            font-size: 1.5rem;
-            font-weight: 700;
-            margin-bottom: 1rem;
-            color: #00ff88;
-        }
-
-        .section p {
-            color: #ccc;
-            font-size: 1rem;
-        }
-
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 1.5rem;
-        }
-
-        .card {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 8px;
-            padding: 1rem;
-            text-align: center;
-        }
-
-        .card h3 {
-            font-size: 1.2rem;
-            margin-bottom: 0.5rem;
-        }
-
-        .card p {
-            color: #ccc;
-        }
-
-        .btn {
-            padding: 0.75rem 1.5rem;
-            border: none;
-            border-radius: 8px;
-            background: #00ff88;
-            color: #1a1a2e;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background 0.3s, transform 0.2s;
-            display: inline-block;
-            text-decoration: none;
-        }
-
-        .btn:hover {
-            background: #00cc6f;
-            transform: translateY(-2px);
-        }
-
-        iframe {
-            border: none;
-            width: 100%;
-        }
-
-        .portfolio-table {
-            width: 100%;
-            border-collapse: collapse;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 8px;
-            overflow: hidden;
-            margin-bottom: 1.5rem;
-        }
-
-        .portfolio-table th,
-        .portfolio-table td {
-            padding: 0.75rem;
-            text-align: left;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .portfolio-table th {
-            background: rgba(0, 255, 136, 0.2);
-            color: #00ff88;
-            font-weight: 600;
-        }
-
-        .portfolio-table td {
-            color: #ccc;
-        }
-
-        .portfolio-table tr:last-child td {
-            border-bottom: none;
-        }
-
-        .positive {
-            color: #00ff88;
-        }
-
-        .negative {
-            color: #ff4d4d;
-        }
-
-        .login-prompt {
-            text-align: center;
-            padding: 1rem;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 8px;
-        }
-
-        @media (max-width: 768px) {
-            .container {
-                padding: 1rem;
-            }
-
-            .section h2 {
-                font-size: 1.25rem;
-            }
-
-            .portfolio-table {
-                font-size: 0.9rem;
-            }
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Trade Daddy - AI Portfolio Analysis</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+    body { background: linear-gradient(135deg, #1a1a2e, #16213e); min-height: 100vh; color: #fff; }
+    .container { max-width: 1200px; margin: auto; padding: 2rem; }
+    .section { background: rgba(255,255,255,0.05); backdrop-filter: blur(10px); border-radius: 16px; padding: 1.5rem; margin-bottom: 2rem; box-shadow: 0 8px 32px rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); }
+    .section h2 { font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem; color: #00ff88; }
+    .section p, pre { color: #ccc; font-size: 1rem; }
+    .portfolio-table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+    .portfolio-table th, .portfolio-table td { padding: 0.75rem; border-bottom: 1px solid rgba(255,255,255,0.1); text-align: left; }
+    .portfolio-table th { background: rgba(0,255,136,0.2); color: #00ff88; }
+    .positive { color: #00ff88; }
+    .negative { color: #ff4d4d; }
+    .btn { padding: 0.75rem 1.5rem; background: #00ff88; border: none; border-radius: 8px; color: #1a1a2e; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-block; margin-top: 1rem; }
+    .btn:hover { background: #00cc6f; transform: translateY(-2px); }
+  </style>
 </head>
 <body>
-    <!-- Navbar -->
-    <nav style="background: rgba(255, 255, 255, 0.05); padding: 1rem; text-align: center;">
-        <a href="/" style="color: #00ff88; text-decoration: none; margin: 0 1rem;">Home</a>
-        <a href="/dashboard.html" style="color: #00ff88; text-decoration: none; margin: 0 1rem;">Dashboard</a>
-        <a href="/trading.html" style="color: #00ff88; text-decoration: none; margin: 0 1rem;">Trading Terminal</a>
-        <a href="/ai-portfolio.html" style="color: #00ff88; text-decoration: none; margin: 0 1rem;">AI Portfolio analyser</a>
-        <a href="/ai-news.html" style="color: #00ff88; text-decoration: none; margin: 0 1rem;">AI News analyser</a>
-        <button id="logoutBtn" style="background: none; border: none; color: #ff5555; cursor: pointer; font-size: 1rem; display: none;">Logout</button>
-    </nav>
 
-    <div class="container">
-        <div class="section">
-            <h2>AI Portfolio Analysis</h2>
-            <p>Optimize your portfolio with AI-driven recommendations. Our advanced models assess risk and forecast performance to help you make informed decisions.</p>
-        </div>
+  <!-- Navbar -->
+  <nav style="background: rgba(255, 255, 255, 0.05); padding: 1rem; text-align: center;">
+    <a href="/" style="color: #00ff88; text-decoration: none; margin: 0 1rem;">Home</a>
+    <a href="/dashboard.html" style="color: #00ff88; text-decoration: none; margin: 0 1rem;">Dashboard</a>
+    <a href="/trading.html" style="color: #00ff88; text-decoration: none; margin: 0 1rem;">Trading Terminal</a>
+    <a href="/ai-portfolio.html" style="color: #00ff88; text-decoration: none; margin: 0 1rem;">AI Portfolio Analyser</a>
+    <a href="/ai-news.html" style="color: #00ff88; text-decoration: none; margin: 0 1rem;">AI News Analyser</a>
+    <button id="logoutBtn" style="background: none; border: none; color: #ff5555; cursor: pointer; font-size: 1rem;">Logout</button>
+  </nav>
 
-        <div class="section" id="portfolio-section">
-            <h2>Portfolio Holdings</h2>
-            <div id="login-prompt" class="login-prompt" style="display: none;">
-                <p>Please log in to view your portfolio.</p>
-                <a href="/login.html" class="btn">Log In</a>
-            </div>
-            <table class="portfolio-table" id="portfolio-table" style="display: none;">
-                <thead>
-                    <tr>
-                        <th>Ticker</th>
-                        <th>Quantity</th>
-                        <th>Buy Price</th>
-                        <th>Current Price</th>
-                        <th>Value</th>
-                        <th>Gain/Loss</th>
-                        <th>Sector</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <!-- Populated by JavaScript -->
-                </tbody>
-            </table>
-        </div>
-
-        <div class="section" id="risk-assessment-section" style="display: none;">
-            <h2>Risk Assessment</h2>
-            <div class="grid" id="risk-assessment">
-                <div class="card">
-                    <h3>Portfolio Risk</h3>
-                    <p>Loading...</p>
-                </div>
-                <div class="card">
-                    <h3>Diversification</h3>
-                    <p>Loading...</p>
-                </div>
-            </div>
-        </div>
-
-        <div class="section" id="performance-forecast-section" style="display: none;">
-            <h2>Performance Forecast</h2>
-            <div class="grid" id="performance-forecast">
-                <div class="card">
-                    <h3>Expected Returns</h3>
-                    <p>Loading...</p>
-                </div>
-                <div class="card">
-                    <h3>Optimization</h3>
-                    <p>Loading...</p>
-                </div>
-            </div>
-            <a href="#optimize" class="btn">Optimize Portfolio</a>
-        </div>
+  <!-- Main Container -->
+  <div class="container">
+    <div class="section" id="login-prompt" style="display: none;">
+      <h2>Login Required</h2>
+      <p>Please log in to view your portfolio and analysis.</p>
+      <a href="/login.html" class="btn">Log In</a>
     </div>
 
-    <!-- Footer -->
-    <footer style="background: rgba(255, 255, 255, 0.05); padding: 1rem; text-align: center; color: #ccc;">
-        <p>© 2025 Trade Daddy. All rights reserved.</p>
-      </footer>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script>
-        const SUPABASE_URL = "https://knzgscqehdmaoudbgdqy.supabase.co"; // Replace with your Supabase URL
-        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtuemdzY3FlaGRtYW91ZGJnZHF5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDYzNDM0MDQsImV4cCI6MjA2MTkxOTQwNH0.ca5ytJBtnNB8oVXqRvSqVXZqa_kBl35fbr9xhy59AYo"; // Replace with your Supabase anon key
+    <div class="section" id="summary-section" style="display: none;">
+      <h2>Account Summary</h2>
+      <p><strong>Balance:</strong> <span id="balance">$0.00</span></p>
+      <p><strong>Holdings JSON:</strong></p>
+      <pre id="holdings-json">{}</pre>
+    </div>
 
-        // Initialize Supabase client
-        const supabase = Supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    <div class="section" id="portfolio-section" style="display: none;">
+      <h2>Portfolio Holdings</h2>
+      <table class="portfolio-table" id="portfolio-table">
+        <thead>
+          <tr>
+            <th>Ticker</th>
+            <th>Quantity</th>
+            <th>Buy Price</th>
+            <th>Current Price</th>
+            <th>Value</th>
+            <th>Gain/Loss</th>
+            <th>Sector</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
 
-        // Function to fetch and render navbar and footer HTML
-        async function loadNavbarFooter() {
-            try {
-                const navbarResponse = await fetch('/navbar.html');
-                const navbarHTML = await navbarResponse.text();
-                document.getElementById('navbar-container').innerHTML = navbarHTML;
+    <div class="section" id="ai-analysis-section" style="display: none;">
+      <h2>AI Portfolio Analysis</h2>
+      <p>This section will contain AI-generated insights from your portfolio holdings.</p>
+    </div>
+  </div>
 
-                const footerResponse = await fetch('/footer.html');
-                const footerHTML = await footerResponse.text();
-                document.getElementById('footer-container').innerHTML = footerHTML;
-            } catch (error) {
-                console.error('Error loading navbar or footer:', error);
-            }
-        }
+  <!-- Footer -->
+  <footer style="background: rgba(255, 255, 255, 0.05); padding: 1rem; text-align: center; color: #ccc;">
+    <p>© 2025 Trade Daddy. All rights reserved.</p>
+  </footer>
 
-        // Check authentication and fetch portfolio
-        async function initialize() {
-            const { data: { session } } = await supabase.auth.getSession();
-            const loginPrompt = document.getElementById("login-prompt");
-            const portfolioSection = document.getElementById("portfolio-table");
-            const riskSection = document.getElementById("risk-assessment-section");
-            const forecastSection = document.getElementById("performance-forecast-section");
+  <!-- Supabase JS -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const SUPABASE_URL = "https://knzgscqehdmaoudbgdqy.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtuemdzY3FlaGRtYW91ZGJnZHF5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDYzNDM0MDQsImV4cCI6MjA2MTkxOTQwNH0.ca5ytJBtnNB8oVXqRvSqVXZqa_kBl35fbr9xhy59AYo"; // Replace with actual anon key
+    const supabase = Supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-            if (!session) {
-                loginPrompt.style.display = "block";
-                portfolioSection.style.display = "none";
-                riskSection.style.display = "none";
-                forecastSection.style.display = "none";
-                return;
-            }
+    async function initialize() {
+      const { data: { session } } = await supabase.auth.getSession();
+      const loginPrompt = document.getElementById("login-prompt");
 
-            loginPrompt.style.display = "none";
-            portfolioSection.style.display = "table";
-            riskSection.style.display = "block";
-            forecastSection.style.display = "block";
+      if (!session) {
+        loginPrompt.style.display = "block";
+        return;
+      }
 
-            await fetchPortfolio(session.user.id);
-        }
+      loginPrompt.style.display = "none";
 
-        // Fetch portfolio from Supabase
-        async function fetchPortfolio(userId) {
-            try {
-                const { data, error } = await supabase
-                    .from("portfolio")
-                    .select("ticker, quantity, buy_price, current_price, sector")
-                    .eq("user_id", userId);
+      await fetchHoldingsMeta(session.user.id);
+      await fetchPortfolio(session.user.id);
+    }
 
-                if (error) {
-                    throw new Error(`Supabase error: ${error.message}`);
-                }
+    async function fetchHoldingsMeta(userId) {
+      const { data, error } = await supabase
+        .from("holdings")
+        .select("balance, holdings")
+        .eq("user_id", userId)
+        .single();
 
-                if (!data || data.length === 0) {
-                    document.querySelector("#portfolio-table tbody").innerHTML = `
-                        <tr><td colspan="7">No holdings found.</td></tr>
-                    `;
-                    return;
-                }
+      if (error) {
+        console.error("Error fetching holdings meta:", error.message);
+        return;
+      }
 
-                populatePortfolioTable(data);
-            } catch (error) {
-                console.error('Fetch portfolio error:', error);
-                document.querySelector("#portfolio-table tbody").innerHTML = `
-                    <tr><td colspan="7">Error fetching portfolio: ${error.message}</td></tr>
-                `;
-            }
-        }
+      document.getElementById("summary-section").style.display = "block";
+      document.getElementById("balance").textContent = `$${data.balance.toFixed(2)}`;
+      document.getElementById("holdings-json").textContent = JSON.stringify(data.holdings, null, 2);
 
-        // Populate portfolio table
-        function populatePortfolioTable(holdings) {
-            const tbody = document.querySelector("#portfolio-table tbody");
-            tbody.innerHTML = "";
-            holdings.forEach(holding => {
-                const currentPrice = holding.current_price || holding.buy_price;
-                const value = (holding.quantity * currentPrice).toFixed(2);
-                const gainLoss = ((currentPrice - holding.buy_price) * holding.quantity).toFixed(2);
-                const row = document.createElement("tr");
-                row.innerHTML = `
-                    <td>${holding.ticker}</td>
-                    <td>${holding.quantity}</td>
-                    <td>$${holding.buy_price.toFixed(2)}</td>
-                    <td>$${currentPrice.toFixed(2)}</td>
-                    <td>$${value}</td>
-                    <td class="${gainLoss >= 0 ? 'positive' : 'negative'}">$${gainLoss}</td>
-                    <td>${holding.sector}</td>
-                `;
-                tbody.appendChild(row);
-            });
-        }
+      analyzeWithAI(data.holdings);
+    }
 
-        // Initialize on page load
-        document.addEventListener("DOMContentLoaded", () => {
-            loadNavbarFooter();
-            initialize();
-        });
-    </script>
+    async function fetchPortfolio(userId) {
+      const { data, error } = await supabase
+        .from("portfolio")
+        .select("ticker, quantity, buy_price, current_price, sector")
+        .eq("user_id", userId);
+
+      if (error) {
+        console.error("Error fetching portfolio:", error.message);
+        return;
+      }
+
+      document.getElementById("portfolio-section").style.display = "block";
+
+      const tbody = document.querySelector("#portfolio-table tbody");
+      tbody.innerHTML = "";
+
+      if (!data.length) {
+        tbody.innerHTML = `<tr><td colspan="7">No holdings found.</td></tr>`;
+        return;
+      }
+
+      data.forEach(item => {
+        const current = item.current_price || item.buy_price;
+        const value = item.quantity * current;
+        const gainLoss = (current - item.buy_price) * item.quantity;
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${item.ticker}</td>
+          <td>${item.quantity}</td>
+          <td>$${item.buy_price.toFixed(2)}</td>
+          <td>$${current.toFixed(2)}</td>
+          <td>$${value.toFixed(2)}</td>
+          <td class="${gainLoss >= 0 ? 'positive' : 'negative'}">$${gainLoss.toFixed(2)}</td>
+          <td>${item.sector}</td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    function analyzeWithAI(holdingsJson) {
+      document.getElementById("ai-analysis-section").style.display = "block";
+      console.log("Sending holdings JSON to AI:", holdingsJson);
+
+      // Replace this stub with real OpenAI/GROQ call if needed
+    }
+
+    document.addEventListener("DOMContentLoaded", initialize);
+  </script>
 </body>
 </html>
