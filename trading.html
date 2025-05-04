@@ -313,7 +313,7 @@
             <div class="card">
                 <h2>Stock List</h2>
                 <div id="stockList" class="stock-list"></div>
-                <div class="empty-message" id="emptyStockMessage">Showing top 10 stocks</div>
+                <div class="empty-message" id="emptyStockMessage">Search for a ticker to view stocks</div>
                 <div class="pagination">
                     <button id="prevPage" disabled>Previous</button>
                     <button id="nextPage">Next</button>
@@ -430,7 +430,7 @@
             console.log('Supabase initialized:', !!supabaseClient);
 
             // API Ninjas Configuration
-            const API_NINJAS_KEY = 'YOUR_API_NINJAS_KEY'; // Replace with your API Ninjas key
+            const API_NINJAS_KEY = 'biBDs49ms5elJgqvqeg0sA==8aDE9mcS13jkusVs';
             const API_NINJAS_URL = 'https://api.api-ninjas.com/v1/stockprice?ticker=';
 
             // State
@@ -442,7 +442,7 @@
             let debounceTimeout;
             const priceCache = new Map(); // Cache for stock prices
 
-            // Default stocks (top 10)
+            // Default stocks to load on init
             const defaultStocks = ['AAPL', 'MSFT', 'TSLA', 'GOOGL', 'AMZN', 'NVDA', 'META', 'JPM', 'V', 'WMT'];
 
             // Mock data fallback (used only if API fails)
@@ -465,7 +465,7 @@
                     const storedStocks = localStorage.getItem('tradeDaddyStocks');
                     if (storedStocks) {
                         stocks = JSON.parse(storedStocks);
-                        filteredStocks = defaultStocks.map(symbol => stocks.find(s => s.symbol === symbol)).filter(s => s);
+                        filteredStocks = [...stocks];
                         console.log('Loaded stocks from localStorage:', stocks.length);
                         updateStockList();
                         updateTradeSymbolOptions();
@@ -503,7 +503,7 @@
                         userEmail = user.email || 'User';
                         elements.userEmail.textContent = userEmail;
 
-                        // Load default stocks (top 10)
+                        // Load default stocks
                         elements.stockListLoading.style.display = 'block';
                         for (const symbol of defaultStocks) {
                             try {
@@ -513,8 +513,6 @@
                                 }
                             } catch (error) {
                                 console.error(`Failed to load default stock ${symbol}:`, error);
-                                const mock = mockStocks.find(s => s.symbol === symbol);
-                                if (mock) stocks.push(mock);
                             }
                         }
                         elements.stockListLoading.style.display = 'none';
@@ -522,12 +520,8 @@
                         // Load stored stocks
                         loadStocksFromStorage();
 
-                        // Set filteredStocks to top 10 if empty
-                        if (!filteredStocks.length) {
-                            filteredStocks = defaultStocks.map(symbol => stocks.find(s => s.symbol === symbol)).filter(s => s);
-                        }
-
                         // Update UI
+                        filteredStocks = [...stocks];
                         console.log('Initial stocks:', stocks.length);
                         updateStockList();
                         updateTradeSymbolOptions();
@@ -651,11 +645,11 @@
             // Search Stocks
             async function searchStocks(query) {
                 if (!query.trim()) {
-                    filteredStocks = defaultStocks.map(symbol => stocks.find(s => s.symbol === symbol)).filter(s => s);
+                    filteredStocks = [...stocks];
                     currentPage = 1;
                     updateStockList();
                     updateTradeSymbolOptions();
-                    console.log('Search cleared, showing top 10 stocks:', filteredStocks.length);
+                    console.log('Search cleared, stocks:', stocks.length);
                     return;
                 }
                 try {
@@ -674,11 +668,11 @@
                     currentPage = 1;
                     updateStockList();
                     updateTradeSymbolOptions();
-                    console.log('Search completed, stocks:', filteredStocks.length);
+                    console.log('Search completed, stocks:', stocks.length);
                 } catch (error) {
                     console.error('Search error:', error);
                     showError(`No stock found for "${query}". Check ad blockers or try another ticker.`);
- filteredStocks = [];
+                    filteredStocks = [];
                     updateStockList();
                 } finally {
                     elements.stockListLoading.style.display = 'none';
@@ -687,10 +681,7 @@
 
             // Update Stock List
             function updateStockList() {
-                const isTop10 = !elements.searchInput.value.trim() && filteredStocks.every(stock => defaultStocks.includes(stock.symbol));
-                elements.emptyStockMessage.textContent = isTop10 ? 'Showing top 10 stocks' : filteredStocks.length === 0 ? 'No stocks found' : '';
-                elements.emptyStockMessage.style.display = filteredStocks.length === 0 || isTop10 ? 'block' : 'none';
-
+                elements.emptyStockMessage.style.display = stocks.length === 0 ? 'block' : 'none';
                 const start = (currentPage - 1) * stocksPerPage;
                 const end = start + stocksPerPage;
                 const paginatedStocks = filteredStocks.slice(start, end);
@@ -707,7 +698,7 @@
 
                 elements.prevPage.disabled = currentPage === 1;
                 elements.nextPage.disabled = end >= filteredStocks.length;
-                console.log('Stock list updated, displaying:', paginatedStocks.length, 'isTop10:', isTop10);
+                console.log('Stock list updated, displaying:', paginatedStocks.length);
             }
 
             // Update Trade Symbol Options
@@ -766,9 +757,7 @@
                             stock.name = updatedStock.name;
                             stock.description = updatedStock.description;
                         }
-                        filteredStocks = elements.searchInput.value.trim() ? 
-                            stocks.filter(s => s.symbol.includes(elements.searchInput.value.toUpperCase()) || s.name.toUpperCase().includes(elements.searchInput.value.toUpperCase())) :
-                            defaultStocks.map(symbol => stocks.find(s => s.symbol === symbol)).filter(s => s);
+                        filteredStocks = [...stocks];
                         updateStockList();
                         updateTradeSymbolOptions();
                         saveStocksToStorage();
@@ -905,9 +894,7 @@
                             stock.name = updatedStock.name;
                             stock.description = updatedStock.description;
                         }
-                        filteredStocks = elements.searchInput.value.trim() ? 
-                            stocks.filter(s => s.symbol.includes(elements.searchInput.value.toUpperCase()) || s.name.toUpperCase().includes(elements.searchInput.value.toUpperCase())) :
-                            defaultStocks.map(symbol => stocks.find(s => s.symbol === symbol)).filter(s => s);
+                        filteredStocks = [...stocks];
                         updateStockList();
                         updateTradeSymbolOptions();
                         saveStocksToStorage();
