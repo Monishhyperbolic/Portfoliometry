@@ -1,11 +1,11 @@
-<!DOCTYPE html>
+]<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Trade Daddy - Dashboard</title>
-    <!-- Supabase JS Client -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+    <!-- Supabase JS Client (pinned version) -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -161,7 +161,7 @@
         <button id="logoutBtn" style="background: none; border: none; color: #ff5555; cursor: pointer; font-size: 1rem; display: none;">Logout</button>
     </nav>
 
-    <!-- Login Container (shown when user is not logged in) -->
+    <!-- Login Container -->
     <div id="loginContainer" class="login-container" style="display: none;">
         <h2 style="color: #00ff88; margin-bottom: 2rem;">Login to Trade Daddy</h2>
         <div class="form-group">
@@ -177,7 +177,7 @@
         <div id="loginError" class="error" style="display: none;">Login error</div>
     </div>
 
-    <!-- Signup Container (hidden by default) -->
+    <!-- Signup Container -->
     <div id="signupContainer" class="login-container" style="display: none;">
         <h2 style="color: #00ff88; margin-bottom: 2rem;">Create an Account</h2>
         <div class="form-group">
@@ -197,7 +197,7 @@
         <div id="signupError" class="error" style="display: none;">Signup error</div>
     </div>
 
-    <!-- Dashboard Container (shown when user is logged in) -->
+    <!-- Dashboard Container -->
     <div id="dashboardContainer" class="container" style="display: none;">
         <div class="header">
             <h1>Welcome to Trade Daddy</h1>
@@ -232,372 +232,332 @@
         <p>© 2025 Trade Daddy. All rights reserved.</p>
     </footer>
 
-    <!-- JavaScript with Supabase Integration -->
     <script>
-        // Initialize Supabase client
-        const SUPABASE_URL = 'https://knzgscqehdmaoudbgdqy.supabase.co'; // Replace with your Supabase URL
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtuemdzY3FlaGRtYW91ZGJnZHF5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDYzNDM0MDQsImV4cCI6MjA2MTkxOTQwNH0.ca5ytJBtnNB8oVXqRvSqVXZqa_kBl35fbr9xhy59AYo'; // Replace with your Supabase anon key
-        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-        // DOM Elements
-        const loginContainer = document.getElementById('loginContainer');
-        const signupContainer = document.getElementById('signupContainer');
-        const dashboardContainer = document.getElementById('dashboardContainer');
-        const loginBtn = document.getElementById('loginBtn');
-        const signupBtn = document.getElementById('signupBtn');
-        const logoutBtn = document.getElementById('logoutBtn');
-        const showSignupBtn = document.getElementById('showSignupBtn');
-        const showLoginBtn = document.getElementById('showLoginBtn');
-        const userEmailDisplay = document.getElementById('userEmail');
-        const errorDisplay = document.getElementById('error');
-        const loadingDisplay = document.getElementById('loading');
-        const dashboardGrid = document.getElementById('dashboardGrid');
-        const statusDisplay = document.getElementById('status');
-        const virtualBalanceDisplay = document.getElementById('virtualBalance');
-
-        // Default starting balance for new users
-        const DEFAULT_BALANCE = 50000;
-
-        // Initialization function - Check authentication status
-        async function init() {
-            // Get current session
-            const { data: { session }, error } = await supabase.auth.getSession();
-            
-            if (error) {
-                console.error('Error getting session:', error);
-                showLoginForm();
+        // Ensure Supabase is loaded before proceeding
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!window.supabase) {
+                console.error('Supabase library not loaded');
+                showError('Failed to load Supabase library. Please refresh the page.');
                 return;
             }
-            
-            if (session) {
-                // User is logged in
-                logoutBtn.style.display = 'inline-block';
-                dashboardContainer.style.display = 'block';
-                loginContainer.style.display = 'none';
-                signupContainer.style.display = 'none';
-                
-                // Get user details
-                const { data: { user } } = await supabase.auth.getUser();
-                userEmailDisplay.textContent = user.email;
-                
-                // Check if user exists in portfolio table
-                checkUserExists(user.email);
-            } else {
-                // User not logged in
-                showLoginForm();
-            }
-        }
 
-        // Show login form
-        function showLoginForm() {
-            loginContainer.style.display = 'block';
-            signupContainer.style.display = 'none';
-            dashboardContainer.style.display = 'none';
-            logoutBtn.style.display = 'none';
-        }
+            // Supabase Configuration
+            const SUPABASE_URL = 'https://knzgscqehdmaoudbgdqy.supabase.co';
+            const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtuemdzY3FlaGRtYW91ZGJnZHF5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDYzNDM0MDQsImV4cCI6MjA2MTkxOTQwNH0.ca5ytJBtnNB8oVXqRvSqVXZqa_kBl35fbr9xhy59AYo';
+            const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            console.log('Supabase initialized:', !!supabaseClient);
 
-        // Show signup form
-        function showSignupForm() {
-            loginContainer.style.display = 'none';
-            signupContainer.style.display = 'block';
-            dashboardContainer.style.display = 'none';
-            logoutBtn.style.display = 'none';
-        }
+            // DOM Elements
+            const elements = {
+                loginContainer: document.getElementById('loginContainer'),
+                signupContainer: document.getElementById('signupContainer'),
+                dashboardContainer: document.getElementById('dashboardContainer'),
+                loginBtn: document.getElementById('loginBtn'),
+                signupBtn: document.getElementById('signupBtn'),
+                logoutBtn: document.getElementById('logoutBtn'),
+                showSignupBtn: document.getElementById('showSignupBtn'),
+                showLoginBtn: document.getElementById('showLoginBtn'),
+                userEmail: document.getElementById('userEmail'),
+                error: document.getElementById('error'),
+                loading: document.getElementById('loading'),
+                dashboardGrid: document.getElementById('dashboardGrid'),
+                status: document.getElementById('status'),
+                virtualBalance: document.getElementById('virtualBalance'),
+                portfolio: document.getElementById('portfolio'),
+                transactions: document.getElementById('transactions'),
+                leaderboard: document.getElementById('leaderboard'),
+                portfolioLoading: document.getElementById('portfolioLoading'),
+                transactionsLoading: document.getElementById('transactionsLoading'),
+                leaderboardLoading: document.getElementById('leaderboardLoading'),
+                loginError: document.getElementById('loginError'),
+                signupError: document.getElementById('signupError'),
+            };
 
-        // Login functionality
-        async function login(email, password) {
-            try {
-                document.getElementById('loginError').style.display = 'none';
-                
-                const { data, error } = await supabase.auth.signInWithPassword({
-                    email: email,
-                    password: password
-                });
-                
-                if (error) throw error;
-                
-                // Login successful, reload page to trigger init()
-                window.location.reload();
-            } catch (error) {
-                document.getElementById('loginError').textContent = error.message;
-                document.getElementById('loginError').style.display = 'block';
-            }
-        }
+            // Constants
+            const DEFAULT_BALANCE = 50000;
 
-        // Signup functionality
-        async function signup(name, email, password) {
-            try {
-                document.getElementById('signupError').style.display = 'none';
-                
-                // Create new user in Supabase Auth
-                const { data, error } = await supabase.auth.signUp({
-                    email: email,
-                    password: password,
-                    options: {
-                        data: {
-                            full_name: name
-                        }
+            // Initialize App
+            async function init() {
+                try {
+                    const { data: { session }, error } = await supabaseClient.auth.getSession();
+                    if (error) throw new Error(`Session error: ${error.message}`);
+                    
+                    if (session) {
+                        elements.logoutBtn.style.display = 'inline-block';
+                        elements.dashboardContainer.style.display = 'block';
+                        elements.loginContainer.style.display = 'none';
+                        elements.signupContainer.style.display = 'none';
+                        
+                        const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+                        if (userError) throw new Error(`User fetch error: ${userError.message}`);
+                        
+                        elements.userEmail.textContent = user.email || 'User';
+                        await loadUserData(user.email);
+                    } else {
+                        showLogin();
                     }
-                });
-                
-                if (error) throw error;
-                
-                // Signup successful - user will be confirmed and logged in automatically
-                // The init() function will handle the check for portfolio table entry
-                window.location.reload();
-            } catch (error) {
-                document.getElementById('signupError').textContent = error.message;
-                document.getElementById('signupError').style.display = 'block';
-            }
-        }
-
-        // Logout functionality
-        async function logout() {
-            try {
-                const { error } = await supabase.auth.signOut();
-                if (error) throw error;
-                
-                // Logout successful, reload page to trigger init()
-                window.location.reload();
-            } catch (error) {
-                console.error('Error during logout:', error);
-                alert('Error logging out. Please try again.');
-            }
-        }
-
-        // Check if user exists in portfolio table
-        async function checkUserExists(email) {
-            try {
-                // Show loading state
-                loadingDisplay.style.display = 'block';
-                dashboardGrid.style.display = 'none';
-                errorDisplay.style.display = 'none';
-                
-                // Check if user exists in portfolio table
-                const { data, error } = await supabase
-                    .from('portfolio')
-                    .select('*')
-                    .eq('email', email)
-                    .single();
-                
-                if (error && error.code !== 'PGRST116') { // PGRST116 means no rows returned
-                    throw error;
+                } catch (error) {
+                    console.error('Init error:', error);
+                    showError('Failed to initialize. Please try again.');
+                    showLogin();
                 }
-                
-                if (!data) {
-                    // User doesn't exist in portfolio table, create new entry
-                    await createNewUser(email);
-                } else {
-                    // User exists, load their data
-                    await loadUserData(email);
-                }
-            } catch (error) {
-                showError(error.message || "Failed to check user");
             }
-        }
 
-        // Create new user in portfolio and balance tables
-        async function createNewUser(email) {
-            try {
-                // Get user's name from auth metadata
-                const { data: { user } } = await supabase.auth.getUser();
-                const name = user.user_metadata?.full_name || "Trader";
-                
-                // Create portfolio entry
-                const { data: portfolioData, error: portfolioError } = await supabase
-                    .from('portfolio')
-                    .insert([
-                        { 
-                            email: email, 
-                            name: name, 
-                            balance: DEFAULT_BALANCE, 
-                            holdings: {} 
-                        }
-                    ])
-                    .select();
-                
-                if (portfolioError) throw portfolioError;
-                
-                // Create balance entry
-                const { data: balanceData, error: balanceError } = await supabase
-                    .from('balance')
-                    .insert([
-                        { 
-                            email: email, 
-                            amount: DEFAULT_BALANCE 
-                        }
+            // Show Login Form
+            function showLogin() {
+                elements.loginContainer.style.display = 'block';
+                elements.signupContainer.style.display = 'none';
+                elements.dashboardContainer.style.display = 'none';
+                elements.logoutBtn.style.display = 'none';
+            }
+
+            // Show Signup Form
+            function showSignup() {
+                elements.loginContainer.style.display = 'none';
+                elements.signupContainer.style.display = 'block';
+                elements.dashboardContainer.style.display = 'none';
+                elements.logoutBtn.style.display = 'none';
+            }
+
+            // Login Handler
+            async function handleLogin() {
+                try {
+                    const email = document.getElementById('email').value;
+                    const password = document.getElementById('password').value;
+                    elements.loginError.style.display = 'none';
+                    
+                    const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+                    if (error) throw new Error(error.message);
+                    
+                    window.location.reload();
+                } catch (error) {
+                    elements.loginError.textContent = error.message || 'Login failed';
+                    elements.loginError.style.display = 'block';
+                }
+            }
+
+            // Signup Handler
+            async function handleSignup() {
+                try {
+                    const name = document.getElementById('signupName').value;
+                    const email = document.getElementById('signupEmail').value;
+                    const password = document.getElementById('signupPassword').value;
+                    elements.signupError.style.display = 'none';
+                    
+                    const { error } = await supabaseClient.auth.signUp({
+                        email,
+                        password,
+                        options: { data: { full_name: name } }
+                    });
+                    if (error) throw new Error(error.message);
+                    
+                    window.location.reload();
+                } catch (error) {
+                    elements.signupError.textContent = error.message || 'Signup failed';
+                    elements.signupError.style.display = 'block';
+                }
+            }
+
+            // Logout Handler
+            async function handleLogout() {
+                try {
+                    const { error } = await supabaseClient.auth.signOut();
+                    if (error) throw new Error(error.message);
+                    window.location.reload();
+                } catch (error) {
+                    console.error('Logout error:', error);
+                    alert('Failed to logout. Please try again.');
+                }
+            }
+
+            // Load User Data
+            async function loadUserData(email) {
+                try {
+                    elements.loading.style.display = 'block';
+                    elements.dashboardGrid.style.display = 'none';
+                    elements.error.style.display = 'none';
+                    
+                    let portfolio = await fetchPortfolio(email);
+                    if (!portfolio) {
+                        portfolio = await createUserPortfolio(email);
+                    }
+                    
+                    updateDashboard(portfolio);
+                    await Promise.all([
+                        loadTransactions(email),
+                        loadLeaderboard()
                     ]);
-                
-                if (balanceError) throw balanceError;
-                
-                // Show success message
-                statusDisplay.textContent = "Account created successfully!";
-                
-                // Load the newly created user's data
-                await loadUserData(email);
-            } catch (error) {
-                showError(error.message || "Failed to create user");
+                } catch (error) {
+                    console.error('Load user data error:', error);
+                    showError(error.message || 'Failed to load dashboard data.');
+                } finally {
+                    elements.loading.style.display = 'none';
+                    elements.dashboardGrid.style.display = 'grid';
+                }
             }
-        }
 
-        // Load user data from portfolio table
-        async function loadUserData(email) {
-            try {
-                // Get portfolio data
-                const { data: portfolioData, error: portfolioError } = await supabase
+            // Fetch Portfolio
+            async function fetchPortfolio(email) {
+                const { data, error } = await supabaseClient
                     .from('portfolio')
                     .select('*')
                     .eq('email', email)
-                    .single();
-                
-                if (portfolioError) throw portfolioError;
-                
-                // Update UI with user data
-                updateDashboard(portfolioData);
-                
-            } catch (error) {
-                showError(error.message || "Failed to load user data");
-            } finally {
-                // Hide loading indicator
-                loadingDisplay.style.display = 'none';
-                dashboardGrid.style.display = 'grid';
+                    .maybeSingle();
+                if (error) throw new Error(`Portfolio fetch error: ${error.message}`);
+                return data;
             }
-        }
 
-        // Update dashboard UI with user data
-        function updateDashboard(userData) {
-            // Update the virtual balance display
-            virtualBalanceDisplay.textContent = `Virtual Balance: $${userData.balance.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
-            
-            // Update portfolio section
-            const portfolioEl = document.getElementById('portfolio');
-            if (userData.holdings && Object.keys(userData.holdings).length > 0) {
-                let portfolioHTML = '';
-                for (const [symbol, holding] of Object.entries(userData.holdings)) {
-                    portfolioHTML += `${symbol}: ${holding.quantity} shares @ $${holding.averagePrice.toFixed(2)}\n`;
+            // Create User Portfolio
+            async function createUserPortfolio(email) {
+                try {
+                    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+                    if (userError) throw new Error(userError.message);
+                    
+                    const name = user.user_metadata?.full_name || 'Trader';
+                    
+                    const { error: portfolioError } = await supabaseClient
+                        .from('portfolio')
+                        .insert([{ email, name, balance: DEFAULT_BALANCE, holdings: {} }]);
+                    if (portfolioError) throw new Error(portfolioError.message);
+                    
+                    const { error: balanceError } = await supabaseClient
+                        .from('balance')
+                        .insert([{ email, amount: DEFAULT_BALANCE }]);
+                    if (balanceError) throw new Error(balanceError.message);
+                    
+                    elements.status.textContent = 'Account created successfully!';
+                    return await fetchPortfolio(email);
+                } catch (error) {
+                    throw new Error(`Create portfolio error: ${error.message}`);
                 }
-                portfolioEl.textContent = portfolioHTML;
-            } else {
-                portfolioEl.textContent = "No stocks in portfolio yet.";
             }
-            
-            // Load transactions
-            loadTransactions(userData.email);
-            
-            // Load leaderboard
-            loadLeaderboard();
-        }
 
-        // Load user's transaction history
-        async function loadTransactions(email) {
-            try {
-                // Show loading state for transactions
-                document.getElementById('transactionsLoading').style.display = 'block';
+            // Update Dashboard UI
+            function updateDashboard(portfolio) {
+                elements.virtualBalance.textContent = `Virtual Balance: $${(portfolio?.balance || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
                 
-                // Get transaction data
-                const { data, error } = await supabase
-                    .from('transactions')
-                    .select('*')
-                    .eq('email', email)
-                    .order('date', { ascending: false })
-                    .limit(10);
-                
-                if (error) throw error;
-                
-                // Update transactions UI
-                const transactionsEl = document.getElementById('transactions');
-                if (data && data.length > 0) {
-                    let transactionsHTML = '';
-                    data.forEach(tx => {
-                        const date = new Date(tx.date);
-                        const formattedDate = date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
-                        transactionsHTML += `${formattedDate}: ${tx.type} ${tx.symbol} - ${tx.quantity} shares @ $${tx.price.toFixed(2)}\n`;
-                    });
-                    transactionsEl.textContent = transactionsHTML;
+                const holdings = portfolio?.holdings || {};
+                if (Object.keys(holdings).length > 0) {
+                    elements.portfolio.textContent = Object.entries(holdings)
+                        .map(([symbol, { quantity, averagePrice }]) => 
+                            `${symbol}: ${quantity || 0} shares @ $${(averagePrice || 0).toFixed(2)}`)
+                        .join('\n');
                 } else {
-                    transactionsEl.textContent = "No transactions yet.";
+                    elements.portfolio.textContent = 'No stocks in portfolio yet.';
                 }
-            } catch (error) {
-                document.getElementById('transactions').textContent = `Error loading transactions: ${error.message || "Unknown error"}`;
-            } finally {
-                document.getElementById('transactionsLoading').style.display = 'none';
             }
-        }
 
-        // Load leaderboard
-        async function loadLeaderboard() {
-            try {
-                // Show loading state for leaderboard
-                document.getElementById('leaderboardLoading').style.display = 'block';
-                
-                // Get leaderboard data
-                const { data, error } = await supabase
-                    .from('portfolio')
-                    .select('name, balance')
-                    .order('balance', { ascending: false })
-                    .limit(10);
-                
-                if (error) throw error;
-                
-                // Update leaderboard UI
-                const leaderboardEl = document.getElementById('leaderboard');
-                if (data && data.length > 0) {
-                    let leaderboardHTML = '';
-                    data.forEach((user, index) => {
-                        leaderboardHTML += `${index + 1}. ${user.name}: $${user.balance.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}\n`;
-                    });
-                    leaderboardEl.textContent = leaderboardHTML;
-                } else {
-                    leaderboardEl.textContent = "No users on leaderboard yet.";
+            // Load Transactions
+            async function loadTransactions(email) {
+                try {
+                    elements.transactionsLoading.style.display = 'block';
+                    const { data, error } = await supabaseClient
+                        .from('transactions')
+                        .select('*')
+                        .eq('email', email)
+                        .order('date', { ascending: false })
+                        .limit(10);
+                    if (error) throw new Error(error.message);
+                    
+                    if (data?.length > 0) {
+                        elements.transactions.textContent = data.map(tx => {
+                            const date = new Date(tx.date);
+                            return `${date.toLocaleString()}: ${tx.type} ${tx.symbol} - ${tx.quantity} shares @ $${tx.price.toFixed(2)}`;
+                        }).join('\n');
+                    } else {
+                        elements.transactions.textContent = 'No transactions yet.';
+                    }
+                } catch (error) {
+                    console.error('Transactions error:', error);
+                    elements.transactions.textContent = 'Failed to load transactions.';
+                } finally {
+                    elements.transactionsLoading.style.display = 'none';
                 }
-            } catch (error) {
-                document.getElementById('leaderboard').textContent = `Error loading leaderboard: ${error.message || "Unknown error"}`;
-            } finally {
-                document.getElementById('leaderboardLoading').style.display = 'none';
             }
-        }
 
-        // Display error message
-        function showError(message) {
-            errorDisplay.textContent = message;
-            errorDisplay.style.display = 'block';
-            loadingDisplay.style.display = 'none';
-        }
+            // Load Leaderboard
+            async function loadLeaderboard() {
+                try {
+                    elements.leaderboardLoading.style.display = 'block';
+                    const { data, error } = await supabaseClient
+                        .from('portfolio')
+                        .select('name, balance')
+                        .order('balance', { ascending: false })
+                        .limit(10);
+                    if (error) throw new Error(error.message);
+                    
+                    if (data?.length > 0) {
+                        elements.leaderboard.textContent = data.map((user, i) => 
+                            `${i + 1}. ${user.name}: $${user.balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                        ).join('\n');
+                    } else {
+                        elements.leaderboard.textContent = 'No users on leaderboard yet.';
+                    }
+                } catch (error) {
+                    console.error('Leaderboard error:', error);
+                    elements.leaderboard.textContent = 'Failed to load leaderboard.';
+                } finally {
+                    elements.leaderboardLoading.style.display = 'none';
+                }
+            }
 
-        // Event Listeners
-        document.addEventListener('DOMContentLoaded', () => {
-            // Initialize app
+            // Show Error Message
+            function showError(message) {
+                elements.error.textContent = message;
+                elements.error.style.display = 'block';
+                elements.loading.style.display = 'none';
+            }
+
+            // Event Listeners
+            elements.showSignupBtn.addEventListener('click', e => {
+                e.preventDefault();
+                showSignup();
+            });
+            elements.showLoginBtn.addEventListener('click', e => {
+                e.preventDefault();
+                showLogin();
+            });
+            elements.loginBtn.addEventListener('click', handleLogin);
+            elements.signupBtn.addEventListener('click', handleSignup);
+            elements.logoutBtn.addEventListener('click', handleLogout);
+
+            // Start initialization
             init();
-            
-            // Form navigation
-            showSignupBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                showSignupForm();
-            });
-            
-            showLoginBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                showLoginForm();
-            });
-            
-            // Login form submission
-            loginBtn.addEventListener('click', () => {
-                const email = document.getElementById('email').value;
-                const password = document.getElementById('password').value;
-                login(email, password);
-            });
-            
-            // Signup form submission
-            signupBtn.addEventListener('click', () => {
-                const name = document.getElementById('signupName').value;
-                const email = document.getElementById('signupEmail').value;
-                const password = document.getElementById('signupPassword').value;
-                signup(name, email, password);
-            });
-            
-            // Logout button
-            logoutBtn.addEventListener('click', logout);
         });
+
+        /*
+        Supabase Table Schemas (for reference):
+        
+        create table portfolio (
+            email text primary key,
+            name text,
+            balance numeric default 50000,
+            holdings jsonb default '{}'
+        );
+
+        create table balance (
+            id serial primary key,
+            email text references portfolio(email),
+            amount numeric
+        );
+
+        create table transactions (
+            id serial primary key,
+            email text references portfolio(email),
+            type text,
+            symbol text,
+            quantity numeric,
+            price numeric,
+            date timestamp default now()
+        );
+
+        RLS Policies:
+        alter table portfolio enable row level security;
+        create policy "Allow authenticated read" on portfolio for select using (auth.email() = email);
+        create policy "Allow authenticated insert" on portfolio for insert with check (auth.email() = email);
+        create policy "Allow authenticated update" on portfolio for update using (auth.email() = email);
+        -- Similar policies for balance and transactions
+        */
     </script>
 </body>
 </html>
