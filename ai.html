@@ -175,6 +175,48 @@
     font-size: large;
     justify-items: center;
 }
+.auth-button {
+    height: 50px;
+    width: 140px;
+    border-radius: 30px;
+    background: linear-gradient(135deg, #6d28d9, #8b5cf6);
+    color: white;
+    font-size: 16px;
+    font-weight: bold;
+    border: none;
+    cursor: pointer;
+    margin: 10px;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.auth-button:hover {
+    background: orange;
+    color: black;
+    transform: scale(1.05);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+}
+
+#auth-buttons {
+    display: flex;
+    justify-content: center;
+    margin-top: 20px;
+    flex-wrap: wrap;
+}
+
+/* Responsive tweaks */
+@media (max-width: 768px) {
+    .auth-button {
+        width: 100%;
+        max-width: 250px;
+    }
+
+    #auth-buttons {
+        flex-direction: column;
+        align-items: center;
+    }
+}
+
 }
 </style>
 
@@ -194,8 +236,20 @@
         
     </nav>
 <div>
-    <script src="https://unpkg.com/@dotlottie/player-component@2.7.12/dist/dotlottie-player.mjs" type="module"></script>
+    <script src="https://lottie.host/f61a41b4-b316-4402-a647-d0f2187dffe7/xVXJm3yf4m.lottie" type="module"></script>
 <dotlottie-player class="backg" src="https://lottie.host/88f4da74-1b90-45d6-8c67-606364bacf6c/2gbf2u7wF7.lottie" background="transparent" speed="1"  loop autoplay></dotlottie-player>
+</div>
+<div class="next landingline">
+    <h2>Meet TradeDaddy AI</h2>
+    <p>
+        Supercharge your trading decisions with cutting-edge AI. From spotting market trends to analyzing risk and optimizing your portfolio—<strong>TradeDaddy AI</strong> turns raw data into powerful, real-time insights so you can trade smarter, not harder.
+    </p>
+    <br>
+    <button class="btn-1">Start Trading</button>
+</div>
+<div id="auth-buttons">
+    <button onclick="window.location.href='login.html'" class="auth-button">Log In</button>
+    <button onclick="window.location.href='signup.html'" class="auth-button">Sign Up</button>
 </div>
 </body>
 </html>
