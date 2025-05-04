@@ -79,92 +79,98 @@
   <!-- Supabase JS -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
+    const { createClient } = supabase;
     const SUPABASE_URL = "https://knzgscqehdmaoudbgdqy.supabase.co";
-    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtuemdzY3FlaGRtYW91ZGJnZHF5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDYzNDM0MDQsImV4cCI6MjA2MTkxOTQwNH0.ca5ytJBtnNB8oVXqRvSqVXZqa_kBl35fbr9xhy59AYo"; // Replace with actual anon key
-    const supabase = Supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtuemdzY3FlaGRtYW91ZGJnZHF5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDYzNDM0MDQsImV4cCI6MjA2MTkxOTQwNH0.ca5ytJBtnNB8oVXqRvSqVXZqa_kBl35fbr9xhy59AYo";
+    const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     async function initialize() {
-  const { data: { session }, error } = await supabase.auth.getSession();
-  const loginPrompt = document.getElementById("login-prompt");
+      const { data: { session }, error } = await supabaseClient.auth.getSession();
+      const loginPrompt = document.getElementById("login-prompt");
 
-  if (!session || !session.user) {
-    loginPrompt.style.display = "block";
-    return;
-  }
+      if (!session || !session.user) {
+        loginPrompt.style.display = "block";
+        return;
+      }
 
-  loginPrompt.style.display = "none";
+      loginPrompt.style.display = "none";
 
-  const userEmail = session.user.email;
-  await fetchHoldingsMeta(userEmail);
-  await fetchPortfolio(userEmail);
-}
+      const userEmail = session.user.email;
+      await fetchHoldingsMeta(userEmail);
+      await fetchPortfolio(userEmail);
+    }
 
-async function fetchHoldingsMeta(email) {
-  const { data, error } = await supabase
-    .from("portfolio")
-    .select("balance, holdings")
-    .eq("email", email)
-    .single();
+    async function fetchHoldingsMeta(email) {
+      const { data, error } = await supabaseClient
+        .from("portfolio")
+        .select("balance, holdings")
+        .eq("email", email)
+        .single();
 
-  if (error) {
-    console.error("Error fetching holdings meta:", error.message);
-    return;
-  }
+      if (error || !data) {
+        console.error("Error fetching summary:", error?.message);
+        return;
+      }
 
-  document.getElementById("summary-section").style.display = "block";
-  document.getElementById("balance").textContent = `$${data.balance.toFixed(2)}`;
-  document.getElementById("holdings-json").textContent = JSON.stringify(data.holdings, null, 2);
+      document.getElementById("summary-section").style.display = "block";
+      document.getElementById("balance").textContent = `$${data.balance.toFixed(2)}`;
+      document.getElementById("holdings-json").textContent = JSON.stringify(data.holdings, null, 2);
+      analyzeWithAI(data.holdings);
+    }
 
-  analyzeWithAI(data.holdings);
-}
+    async function fetchPortfolio(email) {
+      const { data, error } = await supabaseClient
+        .from("portfolio")
+        .select("holdings")
+        .eq("email", email)
+        .single();
 
-async function fetchPortfolio(email) {
-  const { data, error } = await supabase
-    .from("portfolio")
-    .select("holdings")  // 'holdings' is a JSON field that contains all positions
-    .eq("email", email)
-    .single();
+      if (error || !data) {
+        console.error("Error fetching portfolio:", error?.message);
+        return;
+      }
 
-  if (error) {
-    console.error("Error fetching portfolio:", error.message);
-    return;
-  }
+      document.getElementById("portfolio-section").style.display = "block";
+      const tbody = document.querySelector("#portfolio-table tbody");
+      tbody.innerHTML = "";
 
-  document.getElementById("portfolio-section").style.display = "block";
+      const holdings = data.holdings || {};
+      const entries = Object.entries(holdings);
 
-  const tbody = document.querySelector("#portfolio-table tbody");
-  tbody.innerHTML = "";
+      if (entries.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7">No holdings found.</td></tr>`;
+        return;
+      }
 
-  const holdings = data.holdings || {};
-  const entries = Object.entries(holdings);
+      entries.forEach(([ticker, h]) => {
+        const quantity = h.quantity || 0;
+        const buyPrice = h.buy_price || 0;
+        const currentPrice = h.current_price || buyPrice;
+        const value = quantity * currentPrice;
+        const gainLoss = (currentPrice - buyPrice) * quantity;
+        const sector = h.sector || "N/A";
 
-  if (!entries.length) {
-    tbody.innerHTML = `<tr><td colspan="7">No holdings found.</td></tr>`;
-    return;
-  }
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${ticker}</td>
+          <td>${quantity}</td>
+          <td>$${buyPrice.toFixed(2)}</td>
+          <td>$${currentPrice.toFixed(2)}</td>
+          <td>$${value.toFixed(2)}</td>
+          <td class="${gainLoss >= 0 ? 'positive' : 'negative'}">$${gainLoss.toFixed(2)}</td>
+          <td>${sector}</td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
 
-  entries.forEach(([ticker, details]) => {
-    const quantity = details.quantity || 0;
-    const buyPrice = details.buy_price || 0;
-    const currentPrice = details.current_price || buyPrice;
-    const value = quantity * currentPrice;
-    const gainLoss = (currentPrice - buyPrice) * quantity;
-    const sector = details.sector || "N/A";
+    function analyzeWithAI(holdingsJson) {
+      document.getElementById("ai-analysis-section").style.display = "block";
+      // AI analysis placeholder - you can add more complex analysis here
+      console.log("Sending holdings to AI (stub):", holdingsJson);
+    }
 
-    const row = document.createElement("tr");
-    row.innerHTML = `
-      <td>${ticker}</td>
-      <td>${quantity}</td>
-      <td>$${buyPrice.toFixed(2)}</td>
-      <td>$${currentPrice.toFixed(2)}</td>
-      <td>$${value.toFixed(2)}</td>
-      <td class="${gainLoss >= 0 ? 'positive' : 'negative'}">$${gainLoss.toFixed(2)}</td>
-      <td>${sector}</td>
-    `;
-    tbody.appendChild(row);
-  });
-}
-
+    document.addEventListener("DOMContentLoaded", initialize);
   </script>
 </body>
 </html>
