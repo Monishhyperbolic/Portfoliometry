@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Trade Daddy - Dashboard</title>
+    <!-- Supabase JS Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
     <style>
         * {
             margin: 0;
@@ -114,6 +116,32 @@
             font-size: 0.9rem;
             text-align: center;
         }
+        .login-container {
+            max-width: 500px;
+            margin: 4rem auto;
+            padding: 2rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            text-align: center;
+        }
+        .form-group {
+            margin-bottom: 1.5rem;
+            text-align: left;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #ccc;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 0.75rem;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            font-size: 1rem;
+        }
         @media (max-width: 768px) {
             .container {
                 margin: 1rem;
@@ -130,9 +158,47 @@
         <a href="/" style="color: #00ff88; text-decoration: none; margin: 0 1rem;">Home</a>
         <a href="/dashboard.html" style="color: #00ff88; text-decoration: none; margin: 0 1rem;">Dashboard</a>
         <a href="/ai-portfolio.html" style="color: #00ff88; text-decoration: none; margin: 0 1rem;">AI Portfolio</a>
+        <button id="logoutBtn" style="background: none; border: none; color: #ff5555; cursor: pointer; font-size: 1rem; display: none;">Logout</button>
     </nav>
 
-    <div class="container">
+    <!-- Login Container (shown when user is not logged in) -->
+    <div id="loginContainer" class="login-container" style="display: none;">
+        <h2 style="color: #00ff88; margin-bottom: 2rem;">Login to Trade Daddy</h2>
+        <div class="form-group">
+            <label for="email">Email</label>
+            <input type="email" id="email" placeholder="your@email.com">
+        </div>
+        <div class="form-group">
+            <label for="password">Password</label>
+            <input type="password" id="password" placeholder="••••••••">
+        </div>
+        <button id="loginBtn" class="btn">Login</button>
+        <p style="margin-top: 1.5rem; color: #ccc;">Don't have an account? <a href="#" id="showSignupBtn" style="color: #00ff88; text-decoration: none;">Sign up</a></p>
+        <div id="loginError" class="error" style="display: none;">Login error</div>
+    </div>
+
+    <!-- Signup Container (hidden by default) -->
+    <div id="signupContainer" class="login-container" style="display: none;">
+        <h2 style="color: #00ff88; margin-bottom: 2rem;">Create an Account</h2>
+        <div class="form-group">
+            <label for="signupName">Full Name</label>
+            <input type="text" id="signupName" placeholder="John Doe">
+        </div>
+        <div class="form-group">
+            <label for="signupEmail">Email</label>
+            <input type="email" id="signupEmail" placeholder="your@email.com">
+        </div>
+        <div class="form-group">
+            <label for="signupPassword">Password</label>
+            <input type="password" id="signupPassword" placeholder="••••••••">
+        </div>
+        <button id="signupBtn" class="btn">Sign Up</button>
+        <p style="margin-top: 1.5rem; color: #ccc;">Already have an account? <a href="#" id="showLoginBtn" style="color: #00ff88; text-decoration: none;">Login</a></p>
+        <div id="signupError" class="error" style="display: none;">Signup error</div>
+    </div>
+
+    <!-- Dashboard Container (shown when user is logged in) -->
+    <div id="dashboardContainer" class="container" style="display: none;">
         <div class="header">
             <h1>Welcome to Trade Daddy</h1>
             <span id="userEmail">Loading...</span>
@@ -166,311 +232,371 @@
         <p>© 2025 Trade Daddy. All rights reserved.</p>
     </footer>
 
-    <!-- Firebase SDK and JSONBin.io Logic -->
-    <script type="module">
-        // Import Firebase modular SDK
-        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js';
-        import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
+    <!-- JavaScript with Supabase Integration -->
+    <script>
+        // Initialize Supabase client
+        const SUPABASE_URL = 'https://knzgscqehdmaoudbgdqy.supabase.co'; // Replace with your Supabase URL
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtuemdzY3FlaGRtYW91ZGJnZHF5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDYzNDM0MDQsImV4cCI6MjA2MTkxOTQwNH0.ca5ytJBtnNB8oVXqRvSqVXZqa_kBl35fbr9xhy59AYo'; // Replace with your Supabase anon key
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // Firebase Configuration
-        const firebaseConfig = {
-            apiKey: "AIzaSyCobm0izsCAXX_vrNOW2drnRstjqbrs6aU",
-            authDomain: "tradedaddy-45936.firebaseapp.com",
-            projectId: "tradedaddy-45936",
-            storageBucket: "tradedaddy-45936.firebasestorage.app",
-            messagingSenderId: "506023691851",
-            appId: "1:506023691851:web:0f550e65baccbbeabb2fce",
-            measurementId: "G-F0LPJQHZPW"
-        };
+        // DOM Elements
+        const loginContainer = document.getElementById('loginContainer');
+        const signupContainer = document.getElementById('signupContainer');
+        const dashboardContainer = document.getElementById('dashboardContainer');
+        const loginBtn = document.getElementById('loginBtn');
+        const signupBtn = document.getElementById('signupBtn');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const showSignupBtn = document.getElementById('showSignupBtn');
+        const showLoginBtn = document.getElementById('showLoginBtn');
+        const userEmailDisplay = document.getElementById('userEmail');
+        const errorDisplay = document.getElementById('error');
+        const loadingDisplay = document.getElementById('loading');
+        const dashboardGrid = document.getElementById('dashboardGrid');
+        const statusDisplay = document.getElementById('status');
+        const virtualBalanceDisplay = document.getElementById('virtualBalance');
 
-        // JSONBin.io Configuration
-        // SECURITY WARNING: X-Master-Key is exposed in client-side code. Move to a server-side proxy for production.
-        const JSONBIN_API_URL = 'https://api.jsonbin.io/v3/b';
-        const JSONBIN_MASTER_KEY = '$2a$10$S4HKGeJ71eTLlN9zW1ZcIexYrQ.qSpSdqOD3Vljtdou5d.4pgxdyS';
-        
-        // Bin IDs
-        const USERS_BIN_ID = '6814c8f58561e97a500c4c61';
-        const PORTFOLIO_BIN_ID = '6814c9028561e97a500c4c6c';
-        const TRANSACTIONS_BIN_ID = '6814c9138561e97a500c4c7a';
-        const LEADERBOARD_BIN_ID = '6814c9368561e97a500c4c9c';
+        // Default starting balance for new users
+        const DEFAULT_BALANCE = 50000;
 
-        // Helper Functions
-        function showStatus(message) {
-            const statusElement = document.getElementById('status');
-            statusElement.textContent = message;
-            console.log(`[Status] ${message}`);
-        }
-
-        function showError(message) {
-            const errorElement = document.getElementById('error');
-            errorElement.textContent = message;
-            errorElement.style.display = 'block';
-            document.getElementById('loading').style.display = 'none';
-            document.getElementById('dashboardGrid').style.display = 'grid';
-            console.error(`[Error] ${message}`);
-        }
-
-        function toggleCardLoading(cardId, show) {
-            const card = document.getElementById(cardId);
-            const loading = document.getElementById(`${cardId}Loading`);
-            loading.style.display = show ? 'block' : 'none';
-            card.querySelector('p').style.display = show ? 'none' : 'block';
-        }
-
-        // Fetch with timeout and exponential backoff retry
-        async function fetchWithRetry(url, options, retries = 5, baseDelay = 1000, timeout = 5000) {
-            for (let i = 0; i < retries; i++) {
-                try {
-                    showStatus(`Attempt ${i + 1} for ${url}`);
-                    const controller = new AbortController();
-                    const id = setTimeout(() => controller.abort(), timeout);
-                    const response = await fetch(url, { ...options, signal: controller.signal });
-                    clearTimeout(id);
-                    if (response.status === 429 && i < retries - 1) {
-                        const wait = baseDelay * Math.pow(2, i);
-                        showStatus(`Rate limit hit, retrying in ${wait}ms...`);
-                        await new Promise(resolve => setTimeout(resolve, wait));
-                        continue;
-                    }
-                    if (!response.ok) {
-                        let errorMessage = `HTTP ${response.status}`;
-                        if (response.status === 403) errorMessage = 'Unauthorized access to bin. Check X-Master-Key permissions at jsonbin.io.';
-                        if (response.status === 404) errorMessage = 'Bin not found. Verify bin ID at jsonbin.io.';
-                        if (response.status === 429) errorMessage = 'Rate limit exceeded after retries.';
-                        throw new Error(errorMessage);
-                    }
-                    showStatus(`Fetch successful for ${url}`);
-                    return response;
-                } catch (error) {
-                    if (error.name === 'AbortError') {
-                        showStatus(`Fetch timed out for ${url}`);
-                        throw new Error(`Request timed out after ${timeout}ms`);
-                    }
-                    if (i === retries - 1) throw error;
-                    const wait = baseDelay * Math.pow(2, i);
-                    showStatus(`Retrying after ${wait}ms due to error: ${error.message}`);
-                    await new Promise(resolve => setTimeout(resolve, wait));
-                }
-            }
-        }
-
-        // Initialize Firebase
-        let app;
-        let auth;
-        try {
-            showStatus('Initializing Firebase');
-            app = initializeApp(firebaseConfig);
-            auth = getAuth(app);
-            showStatus('Firebase initialized successfully');
-        } catch (error) {
-            showError('Failed to initialize Firebase: ' + error.message);
-            return;
-        }
-
-        if (!auth) {
-            showError('Firebase auth initialization failed.');
-            return;
-        }
-
-        // Handle Authentication State
-        showStatus('Waiting for auth state');
-        onAuthStateChanged(auth, async (user) => {
-            showStatus('Auth state received');
-            if (!user) {
-                showStatus('No user authenticated, redirecting to login');
-                window.location.href = 'index.html';
+        // Initialization function - Check authentication status
+        async function init() {
+            // Get current session
+            const { data: { session }, error } = await supabase.auth.getSession();
+            
+            if (error) {
+                console.error('Error getting session:', error);
+                showLoginForm();
                 return;
             }
+            
+            if (session) {
+                // User is logged in
+                logoutBtn.style.display = 'inline-block';
+                dashboardContainer.style.display = 'block';
+                loginContainer.style.display = 'none';
+                signupContainer.style.display = 'none';
+                
+                // Get user details
+                const { data: { user } } = await supabase.auth.getUser();
+                userEmailDisplay.textContent = user.email;
+                
+                // Check if user exists in portfolio table
+                checkUserExists(user.email);
+            } else {
+                // User not logged in
+                showLoginForm();
+            }
+        }
 
-            const email = user.email;
-            showStatus(`User authenticated: ${email}`);
-            document.getElementById('userEmail').textContent = email;
+        // Show login form
+        function showLoginForm() {
+            loginContainer.style.display = 'block';
+            signupContainer.style.display = 'none';
+            dashboardContainer.style.display = 'none';
+            logoutBtn.style.display = 'none';
+        }
 
+        // Show signup form
+        function showSignupForm() {
+            loginContainer.style.display = 'none';
+            signupContainer.style.display = 'block';
+            dashboardContainer.style.display = 'none';
+            logoutBtn.style.display = 'none';
+        }
+
+        // Login functionality
+        async function login(email, password) {
             try {
-                // Fetch and initialize users data
-                showStatus('Starting users fetch');
-                toggleCardLoading('portfolioCard', true);
-                toggleCardLoading('transactionsCard', true);
-                toggleCardLoading('leaderboardCard', true);
-                let usersResponse = await fetchWithRetry(`${JSONBIN_API_URL}/${USERS_BIN_ID}/latest`, {
-                    headers: { 'X-Master-Key': JSONBIN_MASTER_KEY }
+                document.getElementById('loginError').style.display = 'none';
+                
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email: email,
+                    password: password
                 });
-                showStatus('Parsing users data');
-                let usersData = await usersResponse.json();
-                let users = Array.isArray(usersData.record) ? usersData.record : [];
-                if (!Array.isArray(usersData.record)) {
-                    showStatus('Users bin is not an array, initializing...');
-                    users = [];
-                    await fetchWithRetry(`${JSONBIN_API_URL}/${USERS_BIN_ID}`, {
-                        method: 'PUT',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-Master-Key': JSONBIN_MASTER_KEY
-                        },
-                        body: JSON.stringify(users)
-                    });
-                    showStatus('Users bin initialized');
+                
+                if (error) throw error;
+                
+                // Login successful, reload page to trigger init()
+                window.location.reload();
+            } catch (error) {
+                document.getElementById('loginError').textContent = error.message;
+                document.getElementById('loginError').style.display = 'block';
+            }
+        }
+
+        // Signup functionality
+        async function signup(name, email, password) {
+            try {
+                document.getElementById('signupError').style.display = 'none';
+                
+                // Create new user in Supabase Auth
+                const { data, error } = await supabase.auth.signUp({
+                    email: email,
+                    password: password,
+                    options: {
+                        data: {
+                            full_name: name
+                        }
+                    }
+                });
+                
+                if (error) throw error;
+                
+                // Signup successful - user will be confirmed and logged in automatically
+                // The init() function will handle the check for portfolio table entry
+                window.location.reload();
+            } catch (error) {
+                document.getElementById('signupError').textContent = error.message;
+                document.getElementById('signupError').style.display = 'block';
+            }
+        }
+
+        // Logout functionality
+        async function logout() {
+            try {
+                const { error } = await supabase.auth.signOut();
+                if (error) throw error;
+                
+                // Logout successful, reload page to trigger init()
+                window.location.reload();
+            } catch (error) {
+                console.error('Error during logout:', error);
+                alert('Error logging out. Please try again.');
+            }
+        }
+
+        // Check if user exists in portfolio table
+        async function checkUserExists(email) {
+            try {
+                // Show loading state
+                loadingDisplay.style.display = 'block';
+                dashboardGrid.style.display = 'none';
+                errorDisplay.style.display = 'none';
+                
+                // Check if user exists in portfolio table
+                const { data, error } = await supabase
+                    .from('portfolio')
+                    .select('*')
+                    .eq('email', email)
+                    .single();
+                
+                if (error && error.code !== 'PGRST116') { // PGRST116 means no rows returned
+                    throw error;
                 }
                 
-                // Find or create user
-                let userData = users.find(u => u.email === email);
-                if (!userData) {
-                    showStatus('Creating new user');
-                    userData = {
-                        email,
-                        virtual_balance: 50000.00,
-                        created_at: new Date().toISOString()
-                    };
-                    users.push(userData);
-                    showStatus('Updating users bin');
-                    await fetchWithRetry(`${JSONBIN_API_URL}/${USERS_BIN_ID}`, {
-                        method: 'PUT',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-Master-Key': JSONBIN_MASTER_KEY
-                        },
-                        body: JSON.stringify(users)
-                    });
-                    // Verify update
-                    usersResponse = await fetchWithRetry(`${JSONBIN_API_URL}/${USERS_BIN_ID}/latest`, {
-                        headers: { 'X-Master-Key': JSONBIN_MASTER_KEY }
-                    });
-                    usersData = await usersResponse.json();
-                    users = Array.isArray(usersData.record) ? usersData.record : [];
-                    userData = users.find(u => u.email === email);
-                    if (!userData) {
-                        throw new Error('Failed to persist new user data');
-                    }
-                    showStatus('New user created and verified');
+                if (!data) {
+                    // User doesn't exist in portfolio table, create new entry
+                    await createNewUser(email);
                 } else {
-                    showStatus('Existing user found');
+                    // User exists, load their data
+                    await loadUserData(email);
                 }
-
-                document.getElementById('virtualBalance').textContent = `Virtual Balance: $${userData.virtual_balance.toFixed(2)}`;
-
-                // Fetch portfolio data
-                showStatus('Starting portfolio fetch');
-                const portfolioResponse = await fetchWithRetry(`${JSONBIN_API_URL}/${PORTFOLIO_BIN_ID}/latest`, {
-                    headers: { 'X-Master-Key': JSONBIN_MASTER_KEY }
-                });
-                showStatus('Parsing portfolio data');
-                const portfolioData = await portfolioResponse.json();
-                let portfolios = Array.isArray(portfolioData.record) ? portfolioData.record : [];
-                if (!Array.isArray(portfolioData.record)) {
-                    showStatus('Portfolio bin is not an array, initializing...');
-                    portfolios = [];
-                    await fetchWithRetry(`${JSONBIN_API_URL}/${PORTFOLIO_BIN_ID}`, {
-                        method: 'PUT',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-Master-Key': JSONBIN_MASTER_KEY
-                        },
-                        body: JSON.stringify(portfolios)
-                    });
-                    showStatus('Portfolio bin initialized');
-                }
-                const userPortfolio = portfolios.filter(p => p.email === email);
-                if (userPortfolio.length > 0) {
-                    document.getElementById('portfolio').textContent = userPortfolio
-                        .map(p => `${p.stock_symbol}: ${p.quantity} shares @ $${p.avg_buy_price.toFixed(2)}`)
-                        .join('\n');
-                }
-                toggleCardLoading('portfolioCard', false);
-
-                // Fetch transactions data
-                showStatus('Starting transactions fetch');
-                const transactionsResponse = await fetchWithRetry(`${JSONBIN_API_URL}/${TRANSACTIONS_BIN_ID}/latest`, {
-                    headers: { 'X-Master-Key': JSONBIN_MASTER_KEY }
-                });
-                showStatus('Parsing transactions data');
-                const transactionsData = await transactionsResponse.json();
-                let transactions = Array.isArray(transactionsData.record) ? transactionsData.record : [];
-                if (!Array.isArray(transactionsData.record)) {
-                    showStatus('Transactions bin is not an array, initializing...');
-                    transactions = [];
-                    await fetchWithRetry(`${JSONBIN_API_URL}/${TRANSACTIONS_BIN_ID}`, {
-                        method: 'PUT',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-Master-Key': JSONBIN_MASTER_KEY
-                        },
-                        body: JSON.stringify(transactions)
-                    });
-                    showStatus('Transactions bin initialized');
-                }
-                const userTransactions = transactions.filter(t => t.email === email);
-                if (userTransactions.length > 0) {
-                    document.getElementById('transactions').textContent = userTransactions
-                        .map(t => `${t.type} ${t.stock_symbol}: ${t.quantity} shares @ $${t.price.toFixed(2)} on ${new Date(t.timestamp).toLocaleString()}`)
-                        .join('\n');
-                }
-                toggleCardLoading('transactionsCard', false);
-
-                // Fetch and update leaderboard
-                showStatus('Starting leaderboard fetch');
-                try {
-                    const leaderboardResponse = await fetchWithRetry(`${JSONBIN_API_URL}/${LEADERBOARD_BIN_ID}/latest`, {
-                        headers: { 'X-Master-Key': JSONBIN_MASTER_KEY }
-                    });
-                    showStatus('Parsing leaderboard data');
-                    const leaderboardData = await leaderboardResponse.json();
-                    let leaderboardItems = Array.isArray(leaderboardData.record) ? leaderboardData.record : [];
-                    if (!Array.isArray(leaderboardData.record)) {
-                        showStatus('Leaderboard bin is not an array, initializing...');
-                        leaderboardItems = [];
-                        await fetchWithRetry(`${JSONBIN_API_URL}/${LEADERBOARD_BIN_ID}`, {
-                            method: 'PUT',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'X-Master-Key': JSONBIN_MASTER_KEY
-                            },
-                            body: JSON.stringify(leaderboardItems)
-                        });
-                        showStatus('Leaderboard bin initialized');
-                    }
-
-                    // Update or add user to leaderboard
-                    let userLeaderboardEntry = leaderboardItems.find(entry => entry.email === email);
-                    if (!userLeaderboardEntry) {
-                        showStatus('Adding user to leaderboard');
-                        userLeaderboardEntry = {
-                            email,
-                            portfolio_value: userData.virtual_balance
-                        };
-                        leaderboardItems.push(userLeaderboardEntry);
-                    } else {
-                        showStatus('Updating user in leaderboard');
-                        userLeaderboardEntry.portfolio_value = userData.virtual_balance;
-                    }
-                    // Sort leaderboard by portfolio value
-                    leaderboardItems.sort((a, b) => b.portfolio_value - a.portfolio_value);
-                    await fetchWithRetry(`${JSONBIN_API_URL}/${LEADERBOARD_BIN_ID}`, {
-                        method: 'PUT',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-Master-Key': JSONBIN_MASTER_KEY
-                        },
-                        body: JSON.stringify(leaderboardItems)
-                    });
-                    showStatus('Leaderboard updated');
-                    
-                    document.getElementById('leaderboard').textContent = leaderboardItems
-                        .map((entry, index) => `${index + 1}. ${entry.email}: $${entry.portfolio_value.toFixed(2)}`)
-                        .join('\n');
-                } catch (error) {
-                    showStatus(`Leaderboard error: ${error.message}, showing basic data`);
-                    document.getElementById('leaderboard').textContent = `1. ${email}: $${userData.virtual_balance.toFixed(2)}`;
-                }
-                toggleCardLoading('leaderboardCard', false);
-
-                showStatus('Dashboard loaded successfully');
             } catch (error) {
-                showError(`Error loading dashboard: ${error.message}. Check console and network for details.`);
-            } finally {
-                document.getElementById('loading').style.display = 'none';
-                document.getElementById('dashboardGrid').style.display = 'grid';
-                showStatus('UI updated');
+                showError(error.message || "Failed to check user");
             }
+        }
+
+        // Create new user in portfolio and balance tables
+        async function createNewUser(email) {
+            try {
+                // Get user's name from auth metadata
+                const { data: { user } } = await supabase.auth.getUser();
+                const name = user.user_metadata?.full_name || "Trader";
+                
+                // Create portfolio entry
+                const { data: portfolioData, error: portfolioError } = await supabase
+                    .from('portfolio')
+                    .insert([
+                        { 
+                            email: email, 
+                            name: name, 
+                            balance: DEFAULT_BALANCE, 
+                            holdings: {} 
+                        }
+                    ])
+                    .select();
+                
+                if (portfolioError) throw portfolioError;
+                
+                // Create balance entry
+                const { data: balanceData, error: balanceError } = await supabase
+                    .from('balance')
+                    .insert([
+                        { 
+                            email: email, 
+                            amount: DEFAULT_BALANCE 
+                        }
+                    ]);
+                
+                if (balanceError) throw balanceError;
+                
+                // Show success message
+                statusDisplay.textContent = "Account created successfully!";
+                
+                // Load the newly created user's data
+                await loadUserData(email);
+            } catch (error) {
+                showError(error.message || "Failed to create user");
+            }
+        }
+
+        // Load user data from portfolio table
+        async function loadUserData(email) {
+            try {
+                // Get portfolio data
+                const { data: portfolioData, error: portfolioError } = await supabase
+                    .from('portfolio')
+                    .select('*')
+                    .eq('email', email)
+                    .single();
+                
+                if (portfolioError) throw portfolioError;
+                
+                // Update UI with user data
+                updateDashboard(portfolioData);
+                
+            } catch (error) {
+                showError(error.message || "Failed to load user data");
+            } finally {
+                // Hide loading indicator
+                loadingDisplay.style.display = 'none';
+                dashboardGrid.style.display = 'grid';
+            }
+        }
+
+        // Update dashboard UI with user data
+        function updateDashboard(userData) {
+            // Update the virtual balance display
+            virtualBalanceDisplay.textContent = `Virtual Balance: $${userData.balance.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+            
+            // Update portfolio section
+            const portfolioEl = document.getElementById('portfolio');
+            if (userData.holdings && Object.keys(userData.holdings).length > 0) {
+                let portfolioHTML = '';
+                for (const [symbol, holding] of Object.entries(userData.holdings)) {
+                    portfolioHTML += `${symbol}: ${holding.quantity} shares @ $${holding.averagePrice.toFixed(2)}\n`;
+                }
+                portfolioEl.textContent = portfolioHTML;
+            } else {
+                portfolioEl.textContent = "No stocks in portfolio yet.";
+            }
+            
+            // Load transactions
+            loadTransactions(userData.email);
+            
+            // Load leaderboard
+            loadLeaderboard();
+        }
+
+        // Load user's transaction history
+        async function loadTransactions(email) {
+            try {
+                // Show loading state for transactions
+                document.getElementById('transactionsLoading').style.display = 'block';
+                
+                // Get transaction data
+                const { data, error } = await supabase
+                    .from('transactions')
+                    .select('*')
+                    .eq('email', email)
+                    .order('date', { ascending: false })
+                    .limit(10);
+                
+                if (error) throw error;
+                
+                // Update transactions UI
+                const transactionsEl = document.getElementById('transactions');
+                if (data && data.length > 0) {
+                    let transactionsHTML = '';
+                    data.forEach(tx => {
+                        const date = new Date(tx.date);
+                        const formattedDate = date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+                        transactionsHTML += `${formattedDate}: ${tx.type} ${tx.symbol} - ${tx.quantity} shares @ $${tx.price.toFixed(2)}\n`;
+                    });
+                    transactionsEl.textContent = transactionsHTML;
+                } else {
+                    transactionsEl.textContent = "No transactions yet.";
+                }
+            } catch (error) {
+                document.getElementById('transactions').textContent = `Error loading transactions: ${error.message || "Unknown error"}`;
+            } finally {
+                document.getElementById('transactionsLoading').style.display = 'none';
+            }
+        }
+
+        // Load leaderboard
+        async function loadLeaderboard() {
+            try {
+                // Show loading state for leaderboard
+                document.getElementById('leaderboardLoading').style.display = 'block';
+                
+                // Get leaderboard data
+                const { data, error } = await supabase
+                    .from('portfolio')
+                    .select('name, balance')
+                    .order('balance', { ascending: false })
+                    .limit(10);
+                
+                if (error) throw error;
+                
+                // Update leaderboard UI
+                const leaderboardEl = document.getElementById('leaderboard');
+                if (data && data.length > 0) {
+                    let leaderboardHTML = '';
+                    data.forEach((user, index) => {
+                        leaderboardHTML += `${index + 1}. ${user.name}: $${user.balance.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}\n`;
+                    });
+                    leaderboardEl.textContent = leaderboardHTML;
+                } else {
+                    leaderboardEl.textContent = "No users on leaderboard yet.";
+                }
+            } catch (error) {
+                document.getElementById('leaderboard').textContent = `Error loading leaderboard: ${error.message || "Unknown error"}`;
+            } finally {
+                document.getElementById('leaderboardLoading').style.display = 'none';
+            }
+        }
+
+        // Display error message
+        function showError(message) {
+            errorDisplay.textContent = message;
+            errorDisplay.style.display = 'block';
+            loadingDisplay.style.display = 'none';
+        }
+
+        // Event Listeners
+        document.addEventListener('DOMContentLoaded', () => {
+            // Initialize app
+            init();
+            
+            // Form navigation
+            showSignupBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                showSignupForm();
+            });
+            
+            showLoginBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                showLoginForm();
+            });
+            
+            // Login form submission
+            loginBtn.addEventListener('click', () => {
+                const email = document.getElementById('email').value;
+                const password = document.getElementById('password').value;
+                login(email, password);
+            });
+            
+            // Signup form submission
+            signupBtn.addEventListener('click', () => {
+                const name = document.getElementById('signupName').value;
+                const email = document.getElementById('signupEmail').value;
+                const password = document.getElementById('signupPassword').value;
+                signup(name, email, password);
+            });
+            
+            // Logout button
+            logoutBtn.addEventListener('click', logout);
         });
     </script>
 </body>
