@@ -18,10 +18,14 @@
     .negative { color: #ff4d4d; }
     .btn { padding: 0.75rem 1.5rem; background: #00ff88; border: none; border-radius: 8px; color: #1a1a2e; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-block; margin-top: 1rem; }
     .btn:hover { background: #00cc6f; transform: translateY(-2px); }
+    .summary-value { color: #00ff88; font-weight: 600; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; }
+    .card { background: rgba(255,255,255,0.1); border-radius: 8px; padding: 1rem; text-align: center; }
+    .card h3 { font-size: 1.2rem; margin-bottom: 0.5rem; }
+    .card p { color: #ccc; }
   </style>
 </head>
 <body>
-
   <!-- Navbar -->
   <nav style="background: rgba(255, 255, 255, 0.05); padding: 1rem; text-align: center;">
     <a href="/" style="color: #00ff88; text-decoration: none; margin: 0 1rem;">Home</a>
@@ -42,9 +46,9 @@
 
     <div class="section" id="summary-section" style="display: none;">
       <h2>Account Summary</h2>
-      <p><strong>Balance:</strong> <span id="balance">$0.00</span></p>
-      <p><strong>Holdings JSON:</strong></p>
-      <pre id="holdings-json">{}</pre>
+      <p><strong>Cash Balance:</strong> <span class="summary-value" id="balance">$0.00</span></p>
+      <p><strong>Total Holdings Value:</strong> <span class="summary-value" id="holdings-value">$0.00</span></p>
+      <p><strong>Total Account Value:</strong> <span class="summary-value" id="total-value">$0.00</span></p>
     </div>
 
     <div class="section" id="portfolio-section" style="display: none;">
@@ -58,7 +62,6 @@
             <th>Current Price</th>
             <th>Value</th>
             <th>Gain/Loss</th>
-            <th>Sector</th>
           </tr>
         </thead>
         <tbody></tbody>
@@ -67,7 +70,24 @@
 
     <div class="section" id="ai-analysis-section" style="display: none;">
       <h2>AI Portfolio Analysis</h2>
-      <p>This section will contain AI-generated insights from your portfolio holdings.</p>
+      <div class="grid" id="analysis-grid">
+        <div class="card">
+          <h3>Portfolio Risk</h3>
+          <p>Loading...</p>
+        </div>
+        <div class="card">
+          <h3>Diversification</h3>
+          <p>Loading...</p>
+        </div>
+        <div class="card">
+          <h3>Expected Returns</h3>
+          <p>Loading...</p>
+        </div>
+        <div class="card">
+          <h3>Optimization</h3>
+          <p>Loading...</p>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -82,92 +102,230 @@
     const { createClient } = supabase;
     const SUPABASE_URL = "https://knzgscqehdmaoudbgdqy.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtuemdzY3FlaGRtYW91ZGJnZHF5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDYzNDM0MDQsImV4cCI6MjA2MTkxOTQwNH0.ca5ytJBtnNB8oVXqRvSqVXZqa_kBl35fbr9xhy59AYo";
+    const API_NINJAS_KEY = "biBDs49ms5elJgqvqeg0sA==8aDE9mcS13jkusVs"; // Replace with your API Ninjas key
+    const GROQ_API_KEY = "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";
     const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     async function initialize() {
       const { data: { session }, error } = await supabaseClient.auth.getSession();
       const loginPrompt = document.getElementById("login-prompt");
+      const summarySection = document.getElementById("summary-section");
+      const portfolioSection = document.getElementById("portfolio-section");
+      const analysisSection = document.getElementById("ai-analysis-section");
 
       if (!session || !session.user) {
         loginPrompt.style.display = "block";
+        summarySection.style.display = "none";
+        portfolioSection.style.display = "none";
+        analysisSection.style.display = "none";
         return;
       }
 
       loginPrompt.style.display = "none";
+      summarySection.style.display = "block";
+      portfolioSection.style.display = "block";
+      analysisSection.style.display = "block";
 
       const userEmail = session.user.email;
-      await fetchHoldingsMeta(userEmail);
       await fetchPortfolio(userEmail);
-    }
 
-    async function fetchHoldingsMeta(email) {
-      const { data, error } = await supabaseClient
-        .from("portfolio")
-        .select("balance, holdings")
-        .eq("email", email)
-        .single();
-
-      if (error || !data) {
-        console.error("Error fetching summary:", error?.message);
-        return;
-      }
-
-      document.getElementById("summary-section").style.display = "block";
-      document.getElementById("balance").textContent = `$${data.balance.toFixed(2)}`;
-      document.getElementById("holdings-json").textContent = JSON.stringify(data.holdings, null, 2);
-      analyzeWithAI(data.holdings);
-    }
-
-    async function fetchPortfolio(email) {
-      const { data, error } = await supabaseClient
-        .from("portfolio")
-        .select("holdings")
-        .eq("email", email)
-        .single();
-
-      if (error || !data) {
-        console.error("Error fetching portfolio:", error?.message);
-        return;
-      }
-
-      document.getElementById("portfolio-section").style.display = "block";
-      const tbody = document.querySelector("#portfolio-table tbody");
-      tbody.innerHTML = "";
-
-      const holdings = data.holdings || {};
-      const entries = Object.entries(holdings);
-
-      if (entries.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7">No holdings found.</td></tr>`;
-        return;
-      }
-
-      entries.forEach(([ticker, h]) => {
-        const quantity = h.quantity || 0;
-        const buyPrice = h.buy_price || 0;
-        const currentPrice = h.current_price || buyPrice;
-        const value = quantity * currentPrice;
-        const gainLoss = (currentPrice - buyPrice) * quantity;
-        const sector = h.sector || "N/A";
-
-        const row = document.createElement("tr");
-        row.innerHTML = `
-          <td>${ticker}</td>
-          <td>${quantity}</td>
-          <td>$${buyPrice.toFixed(2)}</td>
-          <td>$${currentPrice.toFixed(2)}</td>
-          <td>$${value.toFixed(2)}</td>
-          <td class="${gainLoss >= 0 ? 'positive' : 'negative'}">$${gainLoss.toFixed(2)}</td>
-          <td>${sector}</td>
-        `;
-        tbody.appendChild(row);
+      document.getElementById("logoutBtn").addEventListener("click", async () => {
+        await supabaseClient.auth.signOut();
+        window.location.reload();
       });
     }
 
-    function analyzeWithAI(holdingsJson) {
-      document.getElementById("ai-analysis-section").style.display = "block";
-      // AI analysis placeholder - you can add more complex analysis here
-      console.log("Sending holdings to AI (stub):", holdingsJson);
+    async function fetchPortfolio(email) {
+      try {
+        const { data, error } = await supabaseClient
+          .from("portfolio")
+          .select("balance, holdings")
+          .eq("email", email)
+          .single();
+
+        if (error || !data) {
+          throw new Error(`Supabase error: ${error?.message || "No data found"}`);
+        }
+
+        const balance = data.balance || 0;
+        const holdings = data.holdings || {};
+        const entries = Object.entries(holdings);
+
+        document.getElementById("balance").textContent = `$${balance.toFixed(2)}`;
+
+        if (entries.length === 0) {
+          document.querySelector("#portfolio-table tbody").innerHTML = `<tr><td colspan="6">No holdings found.</td></tr>`;
+          document.getElementById("holdings-value").textContent = "$0.00";
+          document.getElementById("total-value").textContent = `$${balance.toFixed(2)}`;
+          document.getElementById("analysis-grid").innerHTML = `<div class="card"><h3>Error</h3><p>No portfolio data available.</p></div>`;
+          return;
+        }
+
+        // Fetch current prices from API Ninjas
+        const updatedHoldings = [];
+        let totalHoldingsValue = 0;
+
+        await Promise.all(entries.map(async ([ticker, h]) => {
+          let currentPrice = h.buy_price || 0;
+          try {
+            const response = await fetch(`https://api.api-ninjas.com/v1/stockprice?ticker=${ticker}`, {
+              headers: { "X-Api-Key": API_NINJAS_KEY }
+            });
+            if (!response.ok) {
+              throw new Error(`API Ninjas error: ${response.status} ${response.statusText}`);
+            }
+            const data = await response.json();
+            currentPrice = parseFloat(data.price) || h.buy_price || 0;
+          } catch (error) {
+            console.error(`Error fetching price for ${ticker}:`, error);
+          }
+
+          const quantity = h.quantity || 0;
+          const buyPrice = h.buy_price || 0;
+          const value = quantity * currentPrice;
+          const gainLoss = (currentPrice - buyPrice) * quantity;
+
+          totalHoldingsValue += value;
+
+          updatedHoldings.push({
+            ticker,
+            quantity,
+            buy_price: buyPrice,
+            current_price: currentPrice,
+            value,
+            gain_loss: gainLoss
+          });
+        }));
+
+        // Populate portfolio table
+        const tbody = document.querySelector("#portfolio-table tbody");
+        tbody.innerHTML = "";
+        updatedHoldings.forEach(h => {
+          const row = document.createElement("tr");
+          row.innerHTML = `
+            <td>${h.ticker}</td>
+            <td>${h.quantity}</td>
+            <td>$${h.buy_price.toFixed(2)}</td>
+            <td>$${h.current_price.toFixed(2)}</td>
+            <td>$${h.value.toFixed(2)}</td>
+            <td class="${h.gain_loss >= 0 ? 'positive' : 'negative'}">$${h.gain_loss.toFixed(2)}</td>
+          `;
+          tbody.appendChild(row);
+        });
+
+        // Update summary
+        document.getElementById("holdings-value").textContent = `$${totalHoldingsValue.toFixed(2)}`;
+        document.getElementById("total-value").textContent = `$${(balance + totalHoldingsValue).toFixed(2)}`;
+
+        // Analyze with Grok
+        await analyzePortfolio(updatedHoldings, balance, totalHoldingsValue);
+      } catch (error) {
+        console.error("Fetch portfolio error:", error);
+        document.querySelector("#portfolio-table tbody").innerHTML = `<tr><td colspan="6">Error fetching portfolio: ${error.message}</td></tr>`;
+        document.getElementById("holdings-value").textContent = "$0.00";
+        document.getElementById("total-value").textContent = "$0.00";
+        document.getElementById("analysis-grid").innerHTML = `<div class="card"><h3>Error</h3><p>${error.message}</p></div>`;
+      }
+    }
+
+    async function analyzePortfolio(holdings, balance, totalHoldingsValue) {
+      const totalAccountValue = balance + totalHoldingsValue;
+      const prompt = `
+You are a financial AI analyst powered by Grok. Analyze the following portfolio and account summary:
+
+**Portfolio Holdings:**
+\`\`\`json
+${JSON.stringify(holdings, null, 2)}
+\`\`\`
+
+**Account Summary:**
+- Cash Balance: $${balance.toFixed(2)}
+- Total Holdings Value: $${totalHoldingsValue.toFixed(2)}
+- Total Account Value: $${totalAccountValue.toFixed(2)}
+
+Provide a structured response with detailed, actionable insights:
+- **Portfolio Risk**: Assess risk level (low/moderate/high) based on volatility, concentration, or other factors. Explain clearly.
+- **Diversification**: Evaluate if the portfolio is well-diversified (e.g., across industries, asset types). Suggest specific improvements (e.g., add bonds, reduce exposure to a stock).
+- **Expected Returns**: Estimate annualized return (e.g., 5-10%) based on historical trends, current prices, or market conditions. Justify with data or trends.
+- **Optimization Suggestions**: Recommend specific actions (e.g., buy/sell specific stocks, rebalance weights, use cash balance) to improve risk-adjusted returns. Consider the cash balance for new investments.
+
+Return the response in JSON format:
+\`\`\`json
+{
+  "portfolio_risk": {"level": "moderate", "explanation": "..."},
+  "diversification": {"status": "moderately diversified", "suggestion": "..."},
+  "expected_returns": {"estimate": "8%", "justification": "..."},
+  "optimization": {"suggestions": "..."}
+}
+\`\`\`
+`;
+
+      try {
+        const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${GROQ_API_KEY}`
+          },
+          body: JSON.stringify({
+            model: "llama3-70b-8192",
+            messages: [{ role: "user", content: prompt }],
+            temperature: 0.5
+          })
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('Groq API error:', {
+            status: response.status,
+            statusText: response.statusText,
+            body: errorText
+          });
+          throw new Error(`Groq API error: ${response.status} ${response.statusText}`);
+        }
+
+        const result = await response.json();
+        const reply = result?.choices?.[0]?.message?.content || "{}";
+        let analysis;
+        try {
+          analysis = JSON.parse(reply);
+        } catch (e) {
+          console.error('Failed to parse Groq response:', reply);
+          throw new Error("Invalid response format from Groq API");
+        }
+
+        document.getElementById("analysis-grid").innerHTML = `
+          <div class="card">
+            <h3>Portfolio Risk</h3>
+            <p>${analysis.portfolio_risk?.level || "Unknown"}: ${analysis.portfolio_risk?.explanation || "No data available."}</p>
+          </div>
+          <div class="card">
+            <h3>Diversification</h3>
+            <p>${analysis.diversification?.status || "Unknown"}: ${analysis.diversification?.suggestion || "No data available."}</p>
+          </div>
+          <div class="card">
+            <h3>Expected Returns</h3>
+            <p>${analysis.expected_returns?.estimate || "Unknown"}: ${analysis.expected_returns?.justification || "No data available."}</p>
+          </div>
+          <div class="card">
+            <h3>Optimization</h3>
+            <p>${analysis.optimization?.suggestions || "No suggestions available."}</p>
+          </div>
+        `;
+      } catch (error) {
+        console.error('Analyze portfolio error:', error);
+        let errorMessage = "Failed to analyze portfolio: " + error.message;
+        if (error.message.includes("404")) {
+          errorMessage += " - Verify the endpoint in Groq documentation (https://console.groq.com/docs) or contact Groq support.";
+        } else if (error.message.includes("401")) {
+          errorMessage += " - Invalid or expired API key. Verify your GROQ_API_KEY at https://console.groq.com.";
+        } else if (error.message.includes("429")) {
+          errorMessage += " - Rate limit exceeded. Try again later or check your Groq plan.";
+        }
+        document.getElementById("analysis-grid").innerHTML = `
+          <div class="card"><h3>Error</h3><p>${errorMessage}</p></div>
+        `;
+      }
     }
 
     document.addEventListener("DOMContentLoaded", initialize);
