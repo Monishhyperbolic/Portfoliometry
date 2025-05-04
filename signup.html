@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Trade Daddy - Sign Up</title>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <style>
     * {
       margin: 0;
@@ -320,6 +320,24 @@
           signupError.textContent = error.message;
           signupError.style.display = 'block';
         } else {
+          // Also add the user to the users table
+          const { error: profileError } = await supabaseClient
+            .from('users')
+            .insert([
+              { 
+                id: data.user.id,
+                email: email,
+                created_at: new Date().toISOString(),
+                last_login: new Date().toISOString(),
+                account_status: 'active'
+              }
+            ]);
+            
+          if (profileError) {
+            console.error('Error creating user profile:', profileError);
+            // We don't show this error to the user since authentication worked
+          }
+          
           signupSuccess.textContent = 'Sign up successful! Please check your email for confirmation.';
           signupSuccess.style.display = 'block';
           signupForm.reset();
@@ -422,7 +440,7 @@
     
     // Check if user is already logged in
     async function checkUserSession() {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session } } = await supabaseClient.auth.getSession();
       
       if (session) {
         // User is already logged in, redirect to dashboard

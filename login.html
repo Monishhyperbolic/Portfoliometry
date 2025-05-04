@@ -261,6 +261,17 @@
           errorElement.textContent = error.message || 'Invalid email or password';
           errorElement.style.display = 'block';
         } else {
+          // Update last_login in the users table
+          const { error: updateError } = await supabaseClient
+            .from('users')
+            .update({ last_login: new Date().toISOString() })
+            .eq('id', data.user.id);
+            
+          if (updateError) {
+            console.error('Error updating last login:', updateError);
+            // We don't show this error to the user since authentication worked
+          }
+          
           successElement.textContent = 'Login successful! Redirecting...';
           successElement.style.display = 'block';
           
