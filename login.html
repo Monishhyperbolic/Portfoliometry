@@ -1,206 +1,312 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trade Daddy - Login</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Inter', sans-serif;
-        }
-
-        body {
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            overflow: hidden;
-        }
-
-        .container {
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(10px);
-            border-radius: 16px;
-            padding: 2rem;
-            width: 100%;
-            max-width: 400px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .logo {
-            text-align: center;
-            margin-bottom: 1.5rem;
-        }
-
-        .logo h1 {
-            color: #fff;
-            font-size: 2rem;
-            font-weight: 700;
-            letter-spacing: 1px;
-        }
-
-        .logo span {
-            color: #00ff88;
-            font-size: 1rem;
-            display: block;
-            margin-top: 0.5rem;
-        }
-
-        .form-group {
-            margin-bottom: 1.5rem;
-        }
-
-        label {
-            color: #ccc;
-            font-size: 0.9rem;
-            display: block;
-            margin-bottom: 0.5rem;
-        }
-
-        input {
-            width: 100%;
-            padding: 0.75rem;
-            border: none;
-            border-radius: 8px;
-            background: rgba(255, 255, 255, 0.1);
-            color: #fff;
-            font-size: 1rem;
-            outline: none;
-            transition: background 0.3s;
-        }
-
-        input:focus {
-            background: rgba(255, 255, 255, 0.2);
-        }
-
-        input::placeholder {
-            color: #888;
-        }
-
-        .btn {
-            width: 100%;
-            padding: 0.75rem;
-            border: none;
-            border-radius: 8px;
-            background: #00ff88;
-            color: #1a1a2e;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background 0.3s, transform 0.2s;
-        }
-
-        .btn:hover {
-            background: #00cc6f;
-            transform: translateY(-2px);
-        }
-
-        .error {
-            color: #ff5555;
-            font-size: 0.85rem;
-            margin-top: 0.5rem;
-            display: none;
-            text-align: center;
-        }
-
-        .links {
-            text-align: center;
-            margin-top: 1rem;
-        }
-
-        .links a {
-            color: #00ff88;
-            text-decoration: none;
-            font-size: 0.9rem;
-        }
-
-        .links a:hover {
-            text-decoration: underline;
-        }
-
-        @media (max-width: 480px) {
-            .container {
-                margin: 1rem;
-                padding: 1.5rem;
-            }
-
-            .logo h1 {
-                font-size: 1.5rem;
-            }
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Trade Daddy - Login</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Inter', sans-serif;
+    }
+    body {
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+    }
+    .container {
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(10px);
+      border-radius: 16px;
+      padding: 2rem;
+      width: 100%;
+      max-width: 400px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .logo {
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+    .logo h1 {
+      color: #fff;
+      font-size: 2rem;
+      font-weight: 700;
+      letter-spacing: 1px;
+    }
+    .logo span {
+      color: #00ff88;
+      font-size: 1rem;
+      display: block;
+      margin-top: 0.5rem;
+    }
+    .form-group {
+      margin-bottom: 1.5rem;
+    }
+    label {
+      color: #ccc;
+      font-size: 0.9rem;
+      display: block;
+      margin-bottom: 0.5rem;
+    }
+    input {
+      width: 100%;
+      padding: 0.75rem;
+      border: none;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+      font-size: 1rem;
+      outline: none;
+      transition: background 0.3s;
+    }
+    input:focus {
+      background: rgba(255, 255, 255, 0.2);
+    }
+    input::placeholder {
+      color: #888;
+    }
+    .btn {
+      width: 100%;
+      padding: 0.75rem;
+      border: none;
+      border-radius: 8px;
+      background: #00ff88;
+      color: #1a1a2e;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.3s, transform 0.2s;
+    }
+    .btn:hover {
+      background: #00cc6f;
+      transform: translateY(-2px);
+    }
+    .error {
+      color: #ff5555;
+      font-size: 0.85rem;
+      margin-top: 0.5rem;
+      text-align: center;
+      display: none;
+    }
+    .success {
+      color: #00ff88;
+      font-size: 0.85rem;
+      margin-top: 0.5rem;
+      text-align: center;
+      display: none;
+    }
+    .links {
+      text-align: center;
+      margin-top: 1rem;
+    }
+    .links a {
+      color: #00ff88;
+      text-decoration: none;
+      font-size: 0.9rem;
+    }
+    .links a:hover {
+      text-decoration: underline;
+    }
+    .remember-me {
+      display: flex;
+      align-items: center;
+      margin-bottom: 1.5rem;
+    }
+    .remember-me input {
+      width: auto;
+      margin-right: 0.5rem;
+    }
+    .remember-me label {
+      margin-bottom: 0;
+    }
+    .loading {
+      display: none;
+      text-align: center;
+      margin-top: 1rem;
+    }
+    .loading-spinner {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      border-top-color: #00ff88;
+      animation: spin 1s ease-in-out infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    @media (max-width: 480px) {
+      .container {
+        margin: 1rem;
+        padding: 1.5rem;
+      }
+      .logo h1 {
+        font-size: 1.5rem;
+      }
+    }
+  </style>
 </head>
 <body>
-    <div class="container">
-      <div class="logo">
-        <h1>Trade Daddy</h1>
-        <span>Master the Market</span>
-      </div>
-      <form id="loginForm">
-        <div class="form-group">
-          <label for="email">Email Address</label>
-          <input type="email" id="email" placeholder="Enter your email" required />
-        </div>
-        <div class="form-group">
-          <label for="password">Password</label>
-          <input type="password" id="password" placeholder="Enter your password" required />
-        </div>
-        <button type="submit" class="btn">Login</button>
-        <p class="error" id="error">Invalid email or password</p>
-      </form>
-      <div class="links">
-        <p>Don't have an account? <a href="signup.html">Sign Up</a></p>
-        <p><a href="resetpassword.html">Forgot Password?</a></p>
-      </div>
+  <div class="container">
+    <div class="logo">
+      <h1>Trade Daddy</h1>
+      <span>Master the Market</span>
     </div>
+    <form id="loginForm">
+      <div class="form-group">
+        <label for="email">Email Address</label>
+        <input type="email" id="email" placeholder="Enter your email" required />
+      </div>
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" placeholder="Enter your password" required />
+      </div>
+      <div class="remember-me">
+        <input type="checkbox" id="remember" />
+        <label for="remember">Remember me</label>
+      </div>
+      <button type="submit" class="btn">Login</button>
+      <p class="error" id="error"></p>
+      <p class="success" id="success"></p>
+      <div class="loading" id="loading">
+        <div class="loading-spinner"></div>
+      </div>
+    </form>
+    <div class="links">
+      <p>Don't have an account? <a href="signup.html">Sign Up</a></p>
+      <p><a href="resetpassword.html" id="forgot-password">Forgot Password?</a></p>
+    </div>
+  </div>
 
-    <!-- Supabase SDK -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-    <script>
-      // Supabase Configuration
-      const { createClient } = supabase;
-      const supabaseUrl = 'https://knzgscqehdmaoudbgdqy.supabase.co'; // e.g., https://xyz.supabase.co
-      const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtuemdzY3FlaGRtYW91ZGJnZHF5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDYzNDM0MDQsImV4cCI6MjA2MTkxOTQwNH0.ca5ytJBtnNB8oVXqRvSqVXZqa_kBl35fbr9xhy59AYo'; // Your public anon key
-      const supabase = createClient(supabaseUrl, supabaseKey);
-
-      const loginForm = document.getElementById('loginForm');
-      const errorMsg = document.getElementById('error');
-
-      // Email/Password Login
-      loginForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const email = document.getElementById('email').value.trim();
-        const password = document.getElementById('password').value.trim();
-        errorMsg.style.display = 'none';
-
-        try {
-          const { data, error } = await supabase.auth.signInWithPassword({
-            email,
-            password,
-          });
-          if (error) throw error;
-          if (data.user) {
-            window.location.href = 'dashboard.html';
+  <script>
+    // Initialize Supabase client
+    const supabaseUrl = 'https://knzgscqehdmaoudbgdqy.supabase.co'; // Replace with your Supabase URL
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtuemdzY3FlaGRtYW91ZGJnZHF5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDYzNDM0MDQsImV4cCI6MjA2MTkxOTQwNH0.ca5ytJBtnNB8oVXqRvSqVXZqa_kBl35fbr9xhy59AYo'; // Replace with your Supabase anon key
+    const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+    
+    // DOM Elements
+    const loginForm = document.getElementById('loginForm');
+    const errorElement = document.getElementById('error');
+    const successElement = document.getElementById('success');
+    const loadingElement = document.getElementById('loading');
+    const emailInput = document.getElementById('email');
+    const passwordInput = document.getElementById('password');
+    const rememberMeCheckbox = document.getElementById('remember');
+    
+    // Check if user is already logged in
+    async function checkUserSession() {
+      try {
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        
+        if (session) {
+          // User is already logged in, redirect to dashboard
+          window.location.href = 'dashboard.html'; // Change to your dashboard URL
+        }
+      } catch (error) {
+        console.error('Error checking session:', error);
+      }
+    }
+    
+    // Run on page load
+    checkUserSession();
+    
+    // Validate email format
+    function validateEmail(email) {
+      const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      return re.test(email);
+    }
+    
+    // Handle form submission
+    loginForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      // Reset UI states
+      errorElement.style.display = 'none';
+      successElement.style.display = 'none';
+      loadingElement.style.display = 'block';
+      
+      // Get form values
+      const email = emailInput.value.trim();
+      const password = passwordInput.value;
+      const rememberMe = rememberMeCheckbox.checked;
+      
+      // Validate email format
+      if (!validateEmail(email)) {
+        errorElement.textContent = 'Please enter a valid email address';
+        errorElement.style.display = 'block';
+        loadingElement.style.display = 'none';
+        return;
+      }
+      
+      try {
+        // Sign in with Supabase
+        const { data, error } = await supabaseClient.auth.signInWithPassword({
+          email,
+          password,
+          options: {
+            // Set session duration if remember me is checked
+            expiresIn: rememberMe ? 30 * 24 * 60 * 60 : 3600 // 30 days vs 1 hour
           }
-        } catch (error) {
-          errorMsg.style.display = 'block';
-          errorMsg.textContent = error.message || 'Invalid email or password';
-          console.error('Login error:', error);
+        });
+        
+        if (error) {
+          errorElement.textContent = error.message || 'Invalid email or password';
+          errorElement.style.display = 'block';
+        } else {
+          successElement.textContent = 'Login successful! Redirecting...';
+          successElement.style.display = 'block';
+          
+          // Save the last email used for convenience
+          if (rememberMe) {
+            localStorage.setItem('tradeDaddy_lastEmail', email);
+          } else {
+            localStorage.removeItem('tradeDaddy_lastEmail');
+          }
+          
+          // Redirect to dashboard after successful login
+          setTimeout(() => {
+            window.location.href = 'dashboard.html'; // Change to your dashboard URL
+          }, 1500);
         }
-      });
-
-      // Redirect if already logged in
-      supabase.auth.onAuthStateChange((event, session) => {
-        if (session?.user) {
-          window.location.href = 'dashboard.html';
-        }
-      });
-    </script>
+      } catch (err) {
+        errorElement.textContent = 'An unexpected error occurred. Please try again.';
+        errorElement.style.display = 'block';
+        console.error('Login error:', err);
+      } finally {
+        loadingElement.style.display = 'none';
+      }
+    });
+    
+    // Handle forgot password link
+    document.getElementById('forgot-password').addEventListener('click', (e) => {
+      e.preventDefault();
+      
+      const email = emailInput.value.trim();
+      
+      // If email is filled and valid, pre-fill it in the resetpassword.html page
+      if (validateEmail(email)) {
+        window.location.href = `resetpassword.html?email=${encodeURIComponent(email)}`;
+      } else {
+        window.location.href = 'resetpassword.html';
+      }
+    });
+    
+    // Load the last used email if available
+    window.addEventListener('DOMContentLoaded', () => {
+      const lastEmail = localStorage.getItem('tradeDaddy_lastEmail');
+      if (lastEmail) {
+        emailInput.value = lastEmail;
+        rememberMeCheckbox.checked = true;
+      }
+    });
+  </script>
 </body>
 </html>
