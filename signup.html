@@ -167,9 +167,10 @@
 
     <script>
       // Supabase Configuration
+      const { createClient } = supabase;
       const supabaseUrl = 'https://knzgscqehdmaoudbgdqy.supabase.co'; // e.g., https://xyz.supabase.co
       const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtuemdzY3FlaGRtYW91ZGJnZHF5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDYzNDM0MDQsImV4cCI6MjA2MTkxOTQwNH0.ca5ytJBtnNB8oVXqRvSqVXZqa_kBl35fbr9xhy59AYo'; // Your public anon key
-      const supabase = Supabase.createClient(supabaseUrl, supabaseKey);
+      const supabase = createClient(supabaseUrl, supabaseKey);
 
       const signupForm = document.getElementById('signupForm');
       const errorMsg = document.getElementById('error');
