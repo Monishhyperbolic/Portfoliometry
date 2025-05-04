@@ -1,256 +1,168 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TradeDaddy</title>
-    <link rel="stylesheet" href="style.css">
-</head>
-<style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TradeDaddy</title>
+
+  <!-- Lottie Player Script -->
+  <script src="https://unpkg.com/@dotlottie/player-component@2.7.12/dist/dotlottie-player.mjs" type="module"></script>
+
+  <style>
     body {
-    font-family: Arial, sans-serif;
-    margin: 0;
-    background-color: #27272a;
-    color: #27272a;
-}
-.card {
-        display: inline-block;
-        align-items: center;
-        height: 5px;
-        width: 150px;
-        font-size: auto;
-        color: white;
-    }
-.data {
-    position: sticky;
-    top: 0;
-    background-color:#27272a;
-    padding: 10px 20px;
-    display: flex; 
-    flex-direction: column;  
-    align-items: center; 
-}
-
-.topnav {
-    display: flex; 
-    justify-content: space-between; 
-    align-items: center;
-    background-color:#27272a;
-    padding: 10px 20px; 
-    box-shadow: 0 1px 1px 0 rgba(196, 194, 194, 0.2);
+      font-family: Arial, sans-serif;
+      margin: 0;
+      background-color: #27272a;
+      color: white;
     }
 
-.topnav .logo {
-    color: #f2f2f2;
-    font-size: 24px;
-    font-weight: bold;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-}
-
-.topnav a {
-    color: #f2f2f2;
-    text-align: center;
-    padding: 14px 16px;
-    text-decoration: none;
-    font-size: 17px;
-}
-
-.topnav a:hover {
-    background-color: #3831a1; 
-    color: rgb(249, 249, 249); 
-}
-
-#coin-data,
-#error-message {
-    flex-grow: 1;
-    text-align: center; 
-}
-.backg {
-    transform: translate(-50%, -50%);
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 500px;
-    height: 500px
-
-}
-.landingline{
-    color: white;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-}
-.next{
-    transform: translate(-50%, -50%);
-    position: absolute;
-    top: 80%;
-    left: 50%;
-    width: 45%;
-    font-size:x-large;
-    justify-items: center;
-}
-
-
-@media (max-width: 768px) {
-    #coin-data,#error-message {
-    flex-grow: 1;
-    text-align: center; 
-}
-.card {
-        display: inline-block;
-        align-items: center;
-        height: auto;
-        width: auto;
-        font-size: auto;
-        color: white;
+    .topnav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background-color: #27272a;
+      padding: 10px 20px;
+      box-shadow: 0 1px 1px rgba(196, 194, 194, 0.2);
     }
-.data {
-    position: sticky;
 
-    background-color:#27272a;
-    display: flex; 
-    flex-direction: column;  
-    align-items: center; 
-}
+    .topnav .logo {
+      color: #f2f2f2;
+      font-size: 24px;
+      font-weight: bold;
+    }
 
-    
-   .topnav {
-        flex-direction: column; 
-        align-items:flex-start; 
-        padding-top: 10px; 
-   }
-   
-   .topnav .nav-links {
-        width:100%;
-        justify-content:flex-start; 
-        margin-top:10px; 
-   }
+    .topnav a {
+      color: #f2f2f2;
+      text-decoration: none;
+      padding: 14px 16px;
+      font-size: 17px;
+    }
 
-   .topnav a {
-        padding-left: 10px; 
-        padding-right: 10px; 
-        font-size:16px; 
-   }
-   .backg {
-    transform: translate(-50%, -50%);
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 80%;
-    height: 80%
-}
+    .topnav a:hover {
+      background-color: #3831a1;
+      color: white;
+    }
 
-   .next {
-        top:auto; 
-        margin-top:-20%; 
-        text-align:center;
-   }
+    .data {
+      padding: 20px;
+      text-align: center;
+    }
 
-   .landingline {
-       font-size:large; 
-       text-align:center; 
-       padding-left:.5rem; 
-       padding-right:.5rem; 
-   }
-   .button{
-    display: inline;
-   }
-   .btn-1{
-    height: 55px;
-    width: 100px;
-    border-radius: 20px;
-    background-color: #6d28d9;
-    color: white;
-    font-size: medium;
-}
-.btn-1:hover{
-    background-color: orange;
-    color: black;
-}
-   .next{
-    transform: translate(-50%, -50%);
-    position: absolute;
-    top: 90%;
-    left: 50%;
-    width: 90%%;
-    font-size: large;
-    justify-items: center;
-}
-.auth-button {
-    height: 50px;
-    width: 140px;
-    border-radius: 30px;
-    background: linear-gradient(135deg, #6d28d9, #8b5cf6);
-    color: white;
-    font-size: 16px;
-    font-weight: bold;
-    border: none;
-    cursor: pointer;
-    margin: 10px;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-}
+    dotlottie-player.backg {
+      display: block;
+      margin: 0 auto;
+      width: 500px;
+      height: 500px;
+    }
 
-.auth-button:hover {
-    background: orange;
-    color: black;
-    transform: scale(1.05);
-    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
-}
+    .next {
+      max-width: 800px;
+      margin: 40px auto 20px auto;
+      text-align: center;
+      padding: 0 20px;
+    }
 
-#auth-buttons {
-    display: flex;
-    justify-content: center;
-    margin-top: 20px;
-    flex-wrap: wrap;
-}
+    .landingline h2 {
+      font-size: 2em;
+      margin-bottom: 0.5em;
+    }
 
-/* Responsive tweaks */
-@media (max-width: 768px) {
-    .auth-button {
-        width: 100%;
-        max-width: 250px;
+    .landingline p {
+      font-size: 1.1em;
+      line-height: 1.6;
     }
 
     #auth-buttons {
+      display: flex;
+      justify-content: center;
+      margin-top: 30px;
+      flex-wrap: wrap;
+    }
+
+    .auth-button {
+      height: 50px;
+      width: 140px;
+      border-radius: 30px;
+      background: linear-gradient(135deg, #6d28d9, #8b5cf6);
+      color: white;
+      font-size: 16px;
+      font-weight: bold;
+      border: none;
+      cursor: pointer;
+      margin: 10px;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    .auth-button:hover {
+      background: orange;
+      color: black;
+      transform: scale(1.05);
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+    }
+
+    @media (max-width: 768px) {
+      dotlottie-player.backg {
+        width: 90%;
+        height: auto;
+      }
+
+      .landingline h2 {
+        font-size: 1.5em;
+      }
+
+      .landingline p {
+        font-size: 1em;
+      }
+
+      .auth-button {
+        width: 90%;
+        max-width: 250px;
+      }
+
+      #auth-buttons {
         flex-direction: column;
         align-items: center;
+      }
     }
-}
-
-}
-</style>
+  </style>
+</head>
 
 <body>
-
-
-    <div class="data">
-        <div id="coin-data"></div>
-        <div id="error-message" class="error"></div>
-        <script src="script.js"></script>
+  <nav class="topnav">
+    <div class="logo">TradeDaddy</div>
+    <div>
+      <a href="index.html">Home</a>
+      <a href="ai.html">TradeDaddy AI</a>
+      <a href="about.html">About</a>
     </div>
-    <nav class="topnav">
-        <p class="logo">TradeDaddy</p>
-        <p><a href="index.html">Home </a>
-        <a href="ai.html">TradeDaddy AI</a>
-        <a href="about.html">About</a></p>
-        
-    </nav>
-<div>
-    <script src="https://lottie.host/f61a41b4-b316-4402-a647-d0f2187dffe7/xVXJm3yf4m.lottie" type="module"></script>
-<dotlottie-player class="backg" src="https://lottie.host/88f4da74-1b90-45d6-8c67-606364bacf6c/2gbf2u7wF7.lottie" background="transparent" speed="1"  loop autoplay></dotlottie-player>
-</div>
-<div class="next landingline">
+  </nav>
+
+  <div class="data">
+    <div id="coin-data"></div>
+    <div id="error-message" class="error"></div>
+  </div>
+
+  <dotlottie-player
+    class="backg"
+    src="https://lottie.host/88f4da74-1b90-45d6-8c67-606364bacf6c/2gbf2u7wF7.lottie"
+    background="transparent"
+    speed="1"
+    loop
+    autoplay
+  ></dotlottie-player>
+
+  <div class="next landingline">
     <h2>Meet TradeDaddy AI</h2>
     <p>
-        Supercharge your trading decisions with cutting-edge AI. From spotting market trends to analyzing risk and optimizing your portfolio—<strong>TradeDaddy AI</strong> turns raw data into powerful, real-time insights so you can trade smarter, not harder.
+      Supercharge your trading decisions with cutting-edge AI. From spotting market trends to analyzing risk and optimizing your portfolio—
+      <strong>TradeDaddy AI</strong> turns raw data into powerful, real-time insights so you can trade smarter, not harder.
     </p>
-    <br>
-    <button class="btn-1">Start Trading</button>
-</div>
-<div id="auth-buttons">
+  </div>
+
+  <div id="auth-buttons">
     <button onclick="window.location.href='login.html'" class="auth-button">Log In</button>
     <button onclick="window.location.href='signup.html'" class="auth-button">Sign Up</button>
-</div>
+  </div>
 </body>
 </html>
-
