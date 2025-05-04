@@ -108,6 +108,19 @@
             border-radius: 8px;
             background: rgba(255, 0, 0, 0.1);
         }
+        .notification {
+            color: #ccc;
+            font-size: 0.9rem;
+            text-align: center;
+            margin: 1rem auto;
+            max-width: 800px;
+            padding: 0.75rem;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid #00ff88;
+            display: none;
+        }
         .loading {
             text-align: center;
             margin: 2rem auto;
@@ -261,6 +274,9 @@
         <button id="logoutBtn" style="background: none; border: none; color: #ff5555; cursor: pointer; font-size: 1rem; display: none;">Logout</button>
     </nav>
 
+    <!-- Data Loading Notification -->
+    <div id="dataLoadingNotification" class="notification">Please wait 30 seconds for data to load.</div>
+
     <!-- Login Container -->
     <div id="loginContainer" class="login-container" style="display: none;">
         <h2 style="color: #00ff88; margin-bottom: 2rem;">Login to Trade Daddy</h2>
@@ -313,10 +329,10 @@
             <div class="card">
                 <h2>Stock List</h2>
                 <div id="stockList" class="stock-list"></div>
-                <div class="empty-message" id="emptyStockMessage">Search for a ticker to view stocks</div>
+                <div class="empty-message" id="emptyStockMessage">Showing top 5 US stocks</div>
                 <div class="pagination">
                     <button id="prevPage" disabled>Previous</button>
-                    <button id="nextPage">Next</button>
+                    <button id="nextPage" disabled>Next</button>
                 </div>
                 <div class="card-loading" id="stockListLoading">Loading...</div>
             </div>
@@ -421,6 +437,7 @@
                 loginError: document.getElementById('loginError'),
                 signupError: document.getElementById('signupError'),
                 refreshPricesBtn: document.getElementById('refreshPricesBtn'),
+                dataLoadingNotification: document.getElementById('dataLoadingNotification'),
             };
 
             // Supabase Configuration
@@ -441,22 +458,18 @@
             let userEmail = '';
             let debounceTimeout;
             const priceCache = new Map(); // Cache for stock prices
+            let notificationTimeout;
 
-            // Default stocks to load on init
-            const defaultStocks = ['AAPL', 'MSFT', 'TSLA', 'GOOGL', 'AMZN', 'NVDA', 'META', 'JPM', 'V', 'WMT'];
+            // Default stocks (top 5 US stocks)
+            const defaultStocks = ['AAPL', 'MSFT', 'NVDA', 'AMZN', 'GOOGL'];
 
             // Mock data fallback (used only if API fails)
             const mockStocks = [
                 { symbol: 'AAPL', name: 'Apple Inc.', price: 205.35, description: 'Technology company' },
                 { symbol: 'MSFT', name: 'Microsoft Corporation', price: 386.91, description: 'Software company' },
-                { symbol: 'TSLA', name: 'Tesla, Inc.', price: 276.55, description: 'Electric vehicles' },
-                { symbol: 'GOOGL', name: 'Alphabet Inc.', price: 135.72, description: 'Technology company' },
-                { symbol: 'AMZN', name: 'Amazon.com, Inc.', price: 179.54, description: 'E-commerce company' },
                 { symbol: 'NVDA', name: 'NVIDIA Corporation', price: 121.44, description: 'Semiconductor company' },
-                { symbol: 'META', name: 'Meta Platforms, Inc.', price: 374.49, description: 'Social media company' },
-                { symbol: 'JPM', name: 'JPMorgan Chase & Co.', price: 170.30, description: 'Financial services' },
-                { symbol: 'V', name: 'Visa Inc.', price: 260.35, description: 'Payment processing' },
-                { symbol: 'WMT', name: 'Walmart Inc.', price: 157.65, description: 'Retail company' }
+                { symbol: 'AMZN', name: 'Amazon.com, Inc.', price: 179.54, description: 'E-commerce company' },
+                { symbol: 'GOOGL', name: 'Alphabet Inc.', price: 135.72, description: 'Technology company' }
             ];
 
             // Load stocks from localStorage
@@ -465,7 +478,7 @@
                     const storedStocks = localStorage.getItem('tradeDaddyStocks');
                     if (storedStocks) {
                         stocks = JSON.parse(storedStocks);
-                        filteredStocks = [...stocks];
+                        filteredStocks = defaultStocks.map(symbol => stocks.find(s => s.symbol === symbol)).filter(s => s);
                         console.log('Loaded stocks from localStorage:', stocks.length);
                         updateStockList();
                         updateTradeSymbolOptions();
@@ -503,6 +516,12 @@
                         userEmail = user.email || 'User';
                         elements.userEmail.textContent = userEmail;
 
+                        // Show loading notification
+                        elements.dataLoadingNotification.style.display = 'block';
+                        notificationTimeout = setTimeout(() => {
+                            elements.dataLoadingNotification.style.display = 'none';
+                        }, 30000);
+
                         // Load default stocks
                         elements.stockListLoading.style.display = 'block';
                         for (const symbol of defaultStocks) {
@@ -513,15 +532,27 @@
                                 }
                             } catch (error) {
                                 console.error(`Failed to load default stock ${symbol}:`, error);
+                                const mock = mockStocks.find(s => s.symbol === symbol);
+                                if (mock) {
+                                    showError(`Using mock data for ${symbol} due to API failure.`);
+                                    stocks.push(mock);
+                                }
                             }
                         }
                         elements.stockListLoading.style.display = 'none';
+                        // Hide notification when loading is complete
+                        clearTimeout(notificationTimeout);
+                        elements.dataLoadingNotification.style.display = 'none';
 
                         // Load stored stocks
                         loadStocksFromStorage();
 
+                        // Set filteredStocks to top 5 if empty
+                        if (!filteredStocks.length) {
+                            filteredStocks = defaultStocks.map(symbol => stocks.find(s => s.symbol === symbol)).filter(s => s);
+                        }
+
                         // Update UI
-                        filteredStocks = [...stocks];
                         console.log('Initial stocks:', stocks.length);
                         updateStockList();
                         updateTradeSymbolOptions();
@@ -536,6 +567,9 @@
                     console.error('Init error:', error);
                     showError('Failed to initialize. Please try again.');
                     showLogin();
+                    // Ensure notification is hidden on error
+                    clearTimeout(notificationTimeout);
+                    elements.dataLoadingNotification.style.display = 'none';
                 }
             }
 
@@ -545,6 +579,7 @@
                 if (elements.signupContainer) elements.signupContainer.style.display = 'none';
                 if (elements.tradingContainer) elements.tradingContainer.style.display = 'none';
                 if (elements.logoutBtn) elements.logoutBtn.style.display = 'none';
+                if (elements.dataLoadingNotification) elements.dataLoadingNotification.style.display = 'none';
             }
 
             // Show Signup Form
@@ -553,6 +588,7 @@
                 if (elements.signupContainer) elements.signupContainer.style.display = 'block';
                 if (elements.tradingContainer) elements.tradingContainer.style.display = 'none';
                 if (elements.logoutBtn) elements.logoutBtn.style.display = 'none';
+                if (elements.dataLoadingNotification) elements.dataLoadingNotification.style.display = 'none';
             }
 
             // Login Handler
@@ -645,11 +681,11 @@
             // Search Stocks
             async function searchStocks(query) {
                 if (!query.trim()) {
-                    filteredStocks = [...stocks];
+                    filteredStocks = defaultStocks.map(symbol => stocks.find(s => s.symbol === symbol)).filter(s => s);
                     currentPage = 1;
                     updateStockList();
                     updateTradeSymbolOptions();
-                    console.log('Search cleared, stocks:', stocks.length);
+                    console.log('Search cleared, showing top 5 US stocks:', filteredStocks.length);
                     return;
                 }
                 try {
@@ -668,7 +704,7 @@
                     currentPage = 1;
                     updateStockList();
                     updateTradeSymbolOptions();
-                    console.log('Search completed, stocks:', stocks.length);
+                    console.log('Search completed, stocks:', filteredStocks.length);
                 } catch (error) {
                     console.error('Search error:', error);
                     showError(`No stock found for "${query}". Check ad blockers or try another ticker.`);
@@ -681,7 +717,10 @@
 
             // Update Stock List
             function updateStockList() {
-                elements.emptyStockMessage.style.display = stocks.length === 0 ? 'block' : 'none';
+                const isTop5 = !elements.searchInput.value.trim() && filteredStocks.every(stock => defaultStocks.includes(stock.symbol));
+                elements.emptyStockMessage.textContent = isTop5 ? 'Showing top 5 US stocks' : filteredStocks.length === 0 ? 'No stocks found' : '';
+                elements.emptyStockMessage.style.display = filteredStocks.length === 0 || isTop5 ? 'block' : 'none';
+
                 const start = (currentPage - 1) * stocksPerPage;
                 const end = start + stocksPerPage;
                 const paginatedStocks = filteredStocks.slice(start, end);
@@ -698,7 +737,7 @@
 
                 elements.prevPage.disabled = currentPage === 1;
                 elements.nextPage.disabled = end >= filteredStocks.length;
-                console.log('Stock list updated, displaying:', paginatedStocks.length);
+                console.log('Stock list updated, displaying:', paginatedStocks.length, 'isTop5:', isTop5);
             }
 
             // Update Trade Symbol Options
@@ -757,7 +796,9 @@
                             stock.name = updatedStock.name;
                             stock.description = updatedStock.description;
                         }
-                        filteredStocks = [...stocks];
+                        filteredStocks = elements.searchInput.value.trim() ? 
+                            stocks.filter(s => s.symbol.includes(elements.searchInput.value.toUpperCase()) || s.name.toUpperCase().includes(elements.searchInput.value.toUpperCase())) :
+                            defaultStocks.map(symbol => stocks.find(s => s.symbol === symbol)).filter(s => s);
                         updateStockList();
                         updateTradeSymbolOptions();
                         saveStocksToStorage();
@@ -894,7 +935,9 @@
                             stock.name = updatedStock.name;
                             stock.description = updatedStock.description;
                         }
-                        filteredStocks = [...stocks];
+                        filteredStocks = elements.searchInput.value.trim() ? 
+                            stocks.filter(s => s.symbol.includes(elements.searchInput.value.toUpperCase()) || s.name.toUpperCase().includes(elements.searchInput.value.toUpperCase())) :
+                            defaultStocks.map(symbol => stocks.find(s => s.symbol === symbol)).filter(s => s);
                         updateStockList();
                         updateTradeSymbolOptions();
                         saveStocksToStorage();
