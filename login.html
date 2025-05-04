@@ -92,38 +92,11 @@
             font-size: 1rem;
             font-weight: 600;
             cursor: pointer;
-            transition: background  Bezos: The Rise to Riches 0.3s, transform 0.2s;
+            transition: background 0.3s, transform 0.2s;
         }
 
         .btn:hover {
             background: #00cc6f;
-            transform: translateY(-2px);
-        }
-
-        .google-btn {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 100%;
-            padding: 0.75rem;
-            border: 1px solid #ccc;
-            border-radius: 8px;
-            background: #ffffff;
-            color: #333;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background 0.3s, transform 0.2s;
-            margin-top: 1rem;
-        }
-
-        .google-btn img {
-            width: 20px;
-            margin-right: 0.5rem;
-        }
-
-        .google-btn:hover {
-            background: #f1f1f1;
             transform: translateY(-2px);
         }
 
@@ -148,32 +121,6 @@
 
         .links a:hover {
             text-decoration: underline;
-        }
-
-        .divider {
-            text-align: center;
-            margin: 1.5rem 0;
-            color: #ccc;
-            font-size: 0.9rem;
-            position: relative;
-        }
-
-        .divider::before,
-        .divider::after {
-            content: '';
-            position: absolute;
-            top: 50%;
-            width: 45%;
-            height: 1px;
-            background: #ccc;
-        }
-
-        .divider::before {
-            left: 0;
-        }
-
-        .divider::after {
-            right: 0;
         }
 
         @media (max-width: 480px) {
@@ -206,81 +153,53 @@
         <button type="submit" class="btn">Login</button>
         <p class="error" id="error">Invalid email or password</p>
       </form>
-      <div class="divider">OR</div>
-      <button class="google-btn" id="googleSignIn">
-        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google Logo" />
-        Sign in with Google
-      </button>
       <div class="links">
         <p>Don't have an account? <a href="signup.html">Sign Up</a></p>
         <p><a href="resetpassword.html">Forgot Password?</a></p>
       </div>
     </div>
-  
-    <!-- Firebase SDK (Compat style) -->
-    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-analytics-compat.js"></script>
-  
+
+    <!-- Supabase SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
     <script>
-      // Firebase Configuration (fixed storageBucket)
-      const firebaseConfig = {
-        apiKey: "AIzaSyCobm0izsCAXX_vrNOW2drnRstjqbrs6aU",
-        authDomain: "tradedaddy-45936.firebaseapp.com",
-        projectId: "tradedaddy-45936",
-        storageBucket: "tradedaddy-45936.appspot.com", // fixed here
-        messagingSenderId: "506023691851",
-        appId: "1:506023691851:web:0f550e65baccbbeabb2fce",
-        measurementId: "G-F0LPJQHZPW"
-      };
-  
-      // Initialize Firebase
-      firebase.initializeApp(firebaseConfig);
-      const auth = firebase.auth();
-      firebase.analytics();
-  
+      // Supabase Configuration
+      const supabaseUrl = 'https://knzgscqehdmaoudbgdqy.supabase.co'; // e.g., https://xyz.supabase.co
+      const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtuemdzY3FlaGRtYW91ZGJnZHF5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDYzNDM0MDQsImV4cCI6MjA2MTkxOTQwNH0.ca5ytJBtnNB8oVXqRvSqVXZqa_kBl35fbr9xhy59AYo'; // Your public anon key
+      const supabase = Supabase.createClient(supabaseUrl, supabaseKey);
+
       const loginForm = document.getElementById('loginForm');
       const errorMsg = document.getElementById('error');
-  
+
       // Email/Password Login
       loginForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const email = document.getElementById('email').value.trim();
         const password = document.getElementById('password').value.trim();
         errorMsg.style.display = 'none';
-  
+
         try {
-          await auth.signInWithEmailAndPassword(email, password);
-          window.location.href = 'dashboard.html';
+          const { data, error } = await supabase.auth.signInWithPassword({
+            email,
+            password,
+          });
+          if (error) throw error;
+          if (data.user) {
+            window.location.href = 'dashboard.html';
+          }
         } catch (error) {
           errorMsg.style.display = 'block';
           errorMsg.textContent = error.message || 'Invalid email or password';
           console.error('Login error:', error);
         }
       });
-  
-      // Google Sign-In
-      document.getElementById('googleSignIn').addEventListener('click', async () => {
-        const provider = new firebase.auth.GoogleAuthProvider();
-        errorMsg.style.display = 'none';
-  
-        try {
-          await auth.signInWithPopup(provider);
-          window.location.href = 'dashboard.html';
-        } catch (error) {
-          errorMsg.style.display = 'block';
-          errorMsg.textContent = error.message || 'Error with Google Sign-In';
-          console.error('Google Sign-In error:', error);
-        }
-      });
-  
+
       // Redirect if already logged in
-      auth.onAuthStateChanged((user) => {
-        if (user) {
+      supabase.auth.onAuthStateChange((event, session) => {
+        if (session?.user) {
           window.location.href = 'dashboard.html';
         }
       });
     </script>
-  </body>
-  </html>
-  
+</body>
+</html>

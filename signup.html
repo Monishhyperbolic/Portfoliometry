@@ -100,33 +100,6 @@
             transform: translateY(-2px);
         }
 
-        .google-btn {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 100%;
-            padding: 0.75rem;
-            border: 1px solid #ccc;
-            border-radius: 8px;
-            background: #ffffff;
-            color: #333;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background 0.3s, transform 0.2s;
-            margin-top: 1rem;
-        }
-
-        .google-btn img {
-            width: 20px;
-            margin-right: 0.5rem;
-        }
-
-        .google-btn:hover {
-            background: #f1f1f1;
-            transform: translateY(-2px);
-        }
-
         .error {
             color: #ff5555;
             font-size: 0.85rem;
@@ -148,32 +121,6 @@
 
         .links a:hover {
             text-decoration: underline;
-        }
-
-        .divider {
-            text-align: center;
-            margin: 1.5rem 0;
-            color: #ccc;
-            font-size: 0.9rem;
-            position: relative;
-        }
-
-        .divider::before,
-        .divider::after {
-            content: '';
-            position: absolute;
-            top: 50%;
-            width: 45%;
-            height: 1px;
-            background: #ccc;
-        }
-
-        .divider::before {
-            left: 0;
-        }
-
-        .divider::after {
-            right: 0;
         }
 
         @media (max-width: 480px) {
@@ -210,85 +157,61 @@
         <button type="submit" class="btn">Sign Up</button>
         <p class="error" id="error">Error creating account</p>
       </form>
-      <div class="divider">OR</div>
-      <button class="google-btn" id="googleSignIn">
-        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google Logo" />
-        Sign up with Google
-      </button>
       <div class="links">
         <p>Already have an account? <a href="index.html">Login</a></p>
       </div>
     </div>
-  
-    <!-- Firebase (Compat) SDKs -->
-    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-analytics-compat.js"></script>
-  
+
+    <!-- Supabase SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
     <script>
-      // Firebase configuration
-      const firebaseConfig = {
-        apiKey: "AIzaSyCobm0izsCAXX_vrNOW2drnRstjqbrs6aU",
-        authDomain: "tradedaddy-45936.firebaseapp.com",
-        projectId: "tradedaddy-45936",
-        storageBucket: "tradedaddy-45936.appspot.com",
-        messagingSenderId: "506023691851",
-        appId: "1:506023691851:web:0f550e65baccbbeabb2fce",
-        measurementId: "G-F0LPJQHZPW"
-      };
-  
-      // Initialize Firebase
-      firebase.initializeApp(firebaseConfig);
-      const auth = firebase.auth();
-      const analytics = firebase.analytics();
-  
+      // Supabase Configuration
+      const supabaseUrl = 'https://knzgscqehdmaoudbgdqy.supabase.co'; // e.g., https://xyz.supabase.co
+      const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtuemdzY3FlaGRtYW91ZGJnZHF5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDYzNDM0MDQsImV4cCI6MjA2MTkxOTQwNH0.ca5ytJBtnNB8oVXqRvSqVXZqa_kBl35fbr9xhy59AYo'; // Your public anon key
+      const supabase = Supabase.createClient(supabaseUrl, supabaseKey);
+
       const signupForm = document.getElementById('signupForm');
       const errorMsg = document.getElementById('error');
-  
-      signupForm.addEventListener('submit', (e) => {
+
+      signupForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-  
-        const email = document.getElementById('email').value;
-        const password = document.getElementById('password').value;
-        const confirmPassword = document.getElementById('confirm-password').value;
-  
+
+        const email = document.getElementById('email').value.trim();
+        const password = document.getElementById('password').value.trim();
+        const confirmPassword = document.getElementById('confirm-password').value.trim();
+
         errorMsg.style.display = 'none';
-  
+
         if (password !== confirmPassword) {
           errorMsg.textContent = 'Passwords do not match';
           errorMsg.style.display = 'block';
           return;
         }
-  
-        auth.createUserWithEmailAndPassword(email, password)
-          .then((userCredential) => {
-            const user = userCredential.user;
-            console.log('Signed up:', user.email);
-            window.location.href = '/dashboard.html';
-          })
-          .catch((error) => {
-            errorMsg.style.display = 'block';
-            errorMsg.textContent = error.message || 'Error creating account';
-            console.error('Sign-up error:', error);
+
+        try {
+          const { data, error } = await supabase.auth.signUp({
+            email,
+            password,
           });
+          if (error) throw error;
+          if (data.user) {
+            console.log('Signed up:', data.user.email);
+            window.location.href = 'dashboard.html';
+          }
+        } catch (error) {
+          errorMsg.style.display = 'block';
+          errorMsg.textContent = error.message || 'Error creating account';
+          console.error('Sign-up error:', error);
+        }
       });
-  
-      // Google Sign-In
-      const googleSignInBtn = document.getElementById('googleSignIn');
-      googleSignInBtn.addEventListener('click', () => {
-        const provider = new firebase.auth.GoogleAuthProvider();
-        auth.signInWithPopup(provider)
-          .then((result) => {
-            const user = result.user;
-            console.log('Google Sign-Up:', user.displayName);
-            window.location.href = '/dashboard.html';
-          })
-          .catch((error) => {
-            errorMsg.style.display = 'block';
-            errorMsg.textContent = error.message || 'Error with Google Sign-In';
-            console.error('Google Sign-In error:', error);
-          });
+
+      // Redirect if already logged in
+      supabase.auth.onAuthStateChange((event, session) => {
+        if (session?.user) {
+          window.location.href = 'dashboard.html';
+        }
       });
     </script>
-  </body>
-  </html>
+</body>
+</html>
